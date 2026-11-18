@@ -1,0 +1,152 @@
+sop_id: sop_modify_repo
+name: Repository modification
+version: "1.0"
+description: >
+  Change to an existing repository. The plan is grounded in the current code
+  graph, existing tests are reused where they already cover the requirement.
+risk_tier: medium
+
+steps:
+  - step_id: requirements
+    agent: requirements
+    input:
+      request: "$request"
+      repo_context: "$repo_context"
+      tenant_id: "$tenant_id"
+      run_id: "$run_id"
+    output_schema: RequirementSpec
+    retries: 2
+    gates:
+      - gate_id: approval_spec
+        type: admin_approval
+        params:
+          stage: 1
+          artifact: requirements
+
+  - step_id: code
+    agent: coder
+    input:
+      spec: "$steps.requirements"
+      repo_context: "$repo_context"
+      tenant_id: "$tenant_id"
+      run_id: "$run_id"
+    output_schema: CodePatch
+    retries: 2
+
+  - step_id: tests
+    agent: test_designer
+    input:
+      spec: "$steps.requirements"
+      code: "$steps.code"
+      repo_context: "$repo_context"
+      tenant_id: "$tenant_id"
+      run_id: "$run_id"
+    output_schema: TestSuite
+    retries: 2
+    gates:
+      - gate_id: approval_tests
+        type: admin_approval
+        params:
+          stage: 2
+          artifact: tests
+
+  - step_id: sandbox_run
+    agent: sandbox_runner
+    input:
+      code: "$steps.code"
+      tests: "$steps.tests"
+      spec: "$steps.requirements"
+      patch: "$loop.patch"
+      run_id: "$run_id"
+    output_schema: ExecutionReport
+    retries: 0
+    loop:
+      max_iterations: 3
+      until:
+        path: sandbox_run.exit_code
+        op: eq
+        value: 0
+      feedback_step: debug
+      body:
+        - step_id: debug
+          agent: debugger
+          input:
+            report: "$steps.sandbox_run"
+            code: "$steps.code"
+            repo_context: "$repo_context"
+            tenant_id: "$tenant_id"
+            run_id: "$run_id"
+            spec: "$steps.requirements"
+          output_schema: DebugPatch
+          retries: 1
+
+  - step_id: security_gate
+    agent: security_repair
+    phase: 4
+    input:
+      report: "$steps.sandbox_run"
+      code: "$steps.code"
+      tests: "$steps.tests"
+      spec: "$steps.requirements"
+      run_id: "$run_id"
+      tenant_id: "$tenant_id"
+    output_schema: ExecutionReport
+    retries: 0
+    gates:
+      - gate_id: security_clean
+        type: security_clean
+        params:
+          artifact: security_gate
+
+  - step_id: acceptance_gate
+    agent: acceptance_gate
+    phase: 4
+    input:
+      report: "$steps.sandbox_run"
+      security: "$steps.security_gate"
+      tests: "$steps.tests"
+      spec: "$steps.requirements"
+      run_id: "$run_id"
+      tenant_id: "$tenant_id"
+    output_schema: ExecutionReport
+    retries: 0
+    gates:
+      - gate_id: risk_tier
+        type: risk_tier
+        params:
+          artifact: acceptance_gate
+          min_approval: high
+      - gate_id: acceptance_passed
+        type: acceptance
+        params:
+          artifact: acceptance_gate
+
+  - step_id: sign
+    agent: signer
+    phase: 5
+    input:
+      report: "$steps.sandbox_run"
+      security: "$steps.security_gate"
+      acceptance: "$steps.acceptance_gate"
+      spec: "$steps.requirements"
+      run_id: "$run_id"
+      tenant_id: "$tenant_id"
+    output_schema: ExecutionReport
+    retries: 0
+
+  - step_id: deploy
+    agent: deployer
+    phase: 5
+    input:
+      report: "$steps.sign"
+      run_id: "$run_id"
+      tenant_id: "$tenant_id"
+      spec: "$steps.requirements"
+      run: "$steps.sandbox_run"
+    output_schema: ExecutionReport
+    retries: 0
+    gates:
+      - gate_id: deployment_healthy
+        type: deployment
+        params:
+          artifact: deploy

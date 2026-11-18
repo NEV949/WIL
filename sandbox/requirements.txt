@@ -1,0 +1,12 @@
+pytest==9.2.0
+pytest-cov==7.1.0
+mutmut==3.8.1
+mypy==2.4.1
+ruff==0.17.5
+bandit==1.9.4
+semgrep==1.185.0
+detect-secrets==1.5.0
+faker==40.54.0
+hypothesis==6.170.15
+polyfactory==3.5.0
+pydantic==2.14.3

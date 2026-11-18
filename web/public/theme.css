@@ -1,0 +1,56 @@
+/* The palette of the app. It is loaded before the bundle, so the first paint
+   already has the colours of the chosen theme. */
+
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eaeef3;
+  --text: #121820;
+  --muted: #5a6672;
+  --border: #d5dbe3;
+  --accent: #1d5d8f;
+  --accent-soft: #e3eef7;
+  --on-accent: #ffffff;
+  --ok: #17663c;
+  --ok-soft: #dff2e7;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0da;
+  --danger: #a32020;
+  --danger-soft: #fbe5e5;
+  --shadow: 0 1px 2px rgba(16, 22, 32, 0.08);
+  --radius: 10px;
+  --gutter: 16px;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --bg: #0e141b;
+  --surface: #161d26;
+  --surface-2: #1d2630;
+  --text: #e6ecf2;
+  --muted: #9aa7b4;
+  --border: #2a3440;
+  --accent: #5aa9e0;
+  --accent-soft: #17303f;
+  --on-accent: #06121c;
+  --ok: #64d19a;
+  --ok-soft: #12301f;
+  --warn: #e0b257;
+  --warn-soft: #33280f;
+  --danger: #ef8080;
+  --danger-soft: #351919;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}

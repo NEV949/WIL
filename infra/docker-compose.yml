@@ -1,0 +1,68 @@
+name: oracle-infra
+
+services:
+  redis:
+    image: redis:7.4.12-alpine
+    container_name: oracle-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+      - --requirepass
+      - ${REDIS_PASSWORD:-oracleredis}
+    ports:
+      - "127.0.0.1:6379:6379"
+    user: "redis"
+    volumes:
+      - redis-data:/data
+    networks:
+      - oracle-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-oracleredis}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  qdrant:
+    image: qdrant/qdrant:v1.20.1
+    container_name: oracle-qdrant
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+    networks:
+      - oracle-net
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /healthz HTTP/1.0\r\n\r\n' >&3 && grep -q '200 OK' <&3"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  redis-data:
+  qdrant-storage:
+
+networks:
+  oracle-net:
+    name: oracle-net
+    driver: bridge

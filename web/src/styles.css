@@ -1,0 +1,509 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin: 20px 0 8px;
+}
+
+a {
+  color: var(--accent);
+}
+
+p {
+  margin: 0 0 12px;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+code,
+pre {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.85em;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  max-width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 9px 14px;
+  border: 1px solid transparent;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.danger {
+  background: var(--danger);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.hash {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+
+/* the frame ------------------------------------------------------- */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 var(--gutter);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.who {
+  color: var(--muted);
+  font-size: 0.9em;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 16px var(--gutter) 40px;
+}
+
+.page {
+  max-width: 1100px;
+}
+
+/* the navigation --------------------------------------------------- */
+
+.nav {
+  display: none;
+}
+
+.nav.nav-open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: fixed;
+  inset: 56px 0 0 0;
+  z-index: 20;
+  padding: 16px var(--gutter);
+  background: var(--surface);
+  overflow-y: auto;
+}
+
+.nav-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* the cards -------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+  margin: 0 0 12px;
+}
+
+.field {
+  min-width: 0;
+}
+
+.field dt {
+  color: var(--muted);
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field dd {
+  margin: 2px 0 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.stack > span {
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* the labels ------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge-neutral {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+  font-size: 0.95em;
+}
+
+.notice-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.notice-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.notice-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.notice-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.notice-neutral {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.loading,
+.empty {
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.text-block {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+/* the lists -------------------------------------------------------- */
+
+.task-list,
+.finding-list,
+.check-list,
+.file-list,
+.step-list,
+.model-list,
+.attempt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: var(--surface);
+}
+
+.task-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.task-link {
+  font-weight: 600;
+}
+
+.finding,
+.check,
+.step,
+.model {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.check {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.check-name {
+  font-weight: 600;
+}
+
+.file-list li,
+.attempt-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-path {
+  font-weight: 600;
+}
+
+.step-percent,
+.model-name {
+  font-weight: 600;
+}
+
+/* the bars --------------------------------------------------------- */
+
+.bar {
+  display: block;
+  width: 100%;
+  height: 10px;
+}
+
+.bar-track {
+  fill: var(--surface-2);
+}
+
+.bar-fill {
+  fill: var(--accent);
+}
+
+/* the timeline ----------------------------------------------------- */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timeline-entry {
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+}
+
+.timeline-head {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.timeline-action {
+  font-weight: 600;
+}
+
+/* the login -------------------------------------------------------- */
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  padding: 32px var(--gutter);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 24rem;
+  margin: 0;
+}
+
+.login-card h1 {
+  margin-bottom: 4px;
+}
+
+/* the wide screen -------------------------------------------------- */
+
+@media (min-width: 900px) {
+  .menu-button {
+    display: none;
+  }
+
+  .nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 0 0 240px;
+    width: 240px;
+    padding: 16px 12px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    align-self: flex-start;
+    position: sticky;
+    top: 56px;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+
+  .nav.nav-open {
+    position: sticky;
+    inset: auto;
+    padding: 16px 12px;
+    overflow-y: auto;
+  }
+
+  .main {
+    padding: 24px 32px 48px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+}

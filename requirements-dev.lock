@@ -1,0 +1,10 @@
+# Host-side quality gate tooling (Windows, py3.12). Same versions as the
+# sandbox image so host and sandbox report identical findings.
+mypy==2.4.1
+mypy_extensions==1.2.0
+ruff==0.17.5
+pytest-cov==7.1.0
+coverage==7.17.3
+types-PyYAML==6.0.12.20250915
+types-networkx==3.6.1.20261114
+Faker==40.54.0

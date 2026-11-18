@@ -1,0 +1,33 @@
+{
+  "name": "Oracle-HCM auto-coding engine",
+  "short_name": "Oracle-HCM",
+  "description": "The console of the Oracle-HCM auto-coding engine: tasks, approvals, findings, artifacts, rollout and metrics.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e141b",
+  "theme_color": "#0e141b",
+  "categories": ["productivity", "developer"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

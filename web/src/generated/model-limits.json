@@ -1,0 +1,56 @@
+{
+  "source": "models.yaml",
+  "models": [
+    {
+      "model": "gemini/gemini-3.8-flash",
+      "roles": [
+        "requirements"
+      ],
+      "rpm": 35,
+      "tpm": 120000
+    },
+    {
+      "model": "gemini/gemma-4-31b-it",
+      "roles": [
+        "test_designer"
+      ],
+      "rpm": 30,
+      "tpm": 16000
+    },
+    {
+      "model": "groq/openai/gpt-oss-120b",
+      "roles": [
+        "debugger"
+      ],
+      "rpm": 30,
+      "tpm": 8000
+    },
+    {
+      "model": "groq/qwen/qwen3.8-27b",
+      "roles": [
+        "coder",
+        "debugger"
+      ],
+      "rpm": 30,
+      "tpm": 8000
+    },
+    {
+      "model": "nvidia_nim/minimaxai/minimax-m3.1-flash",
+      "roles": [
+        "requirements",
+        "coder",
+        "debugger"
+      ],
+      "rpm": 35,
+      "tpm": 120000
+    },
+    {
+      "model": "openai/gpt-4.1",
+      "roles": [
+        "test_designer"
+      ],
+      "rpm": 3,
+      "tpm": 10000
+    }
+  ]
+}

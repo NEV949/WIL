@@ -1,0 +1,119 @@
+# Model assignments, one per agent role.
+
+# Every model value is a LiteLLM model string: <provider prefix>/<model id>.
+# The engine refuses to call a model whose id is still a REPLACE_WITH_* placeholder.
+
+# provider may be omitted: it is then inferred from the model string prefix
+# (groq/, openai/, gemini/, google/, nvidia_nim/).
+
+# rpm / tpm are enforced per model by the router. temperature is the default
+# for the role; the debugger overrides it per attempt (0.0 / 0.3 / 0.5).
+
+# A model of the chain can carry limits of its own under "limits": the limits
+# of the role apply to the models that do not name any. A fallback is served
+# by another provider, which has limits of its own.
+
+# Limits below come from the provider tables:
+#   NVIDIA NIM trial: 40 RPM (token limits not published) -> rpm kept at 35
+#   Groq free: 30 RPM, 8K TPM, 200K tokens/day per model
+#   OpenAI gpt-4.1: 3 RPM, 10K TPM   (gpt-5.4-mini: 10 RPM, 100K TPM)
+
+version: 1
+
+# Per-model parameter overrides: drop unsupported parameters for specific models.
+model_overrides:
+  "gemini/gemini-3.8-flash":
+    drop_params:
+      - "temperature"
+
+# The embedding model of the knowledge store. The model id, the provider and
+# the length of the vectors are read from here: the Qdrant collections are
+# created with that length and are refused when they hold the vectors of
+# another embedder. The provider must return vectors of that length.
+embeddings:
+  model: "gemini/gemini-embedding-2"
+  provider: gemini
+  dimensions: 768
+  rpm: 100
+  tpm: 30000
+
+roles:
+  requirements:
+    model: "gemini/gemini-3.8-flash"
+    provider: gemini
+    fallback:
+      - "groq/openai/gpt-oss-120b"
+      - "nvidia_nim/minimaxai/minimax-m3.1-flash"
+    rpm: 5
+    tpm: 250000
+    temperature: 1.0
+    limits:
+      "groq/openai/gpt-oss-120b":
+        rpm: 30
+        tpm: 8000
+      "nvidia_nim/minimaxai/minimax-m3.1-flash":
+        rpm: 35
+        tpm: 120000
+
+  coder:
+    model: "groq/qwen/qwen3.8-27b"
+    provider: groq
+    fallback:
+      - "groq/openai/gpt-oss-120b"
+      - "gemini/gemini-3.8-flash"
+      - "nvidia_nim/minimaxai/minimax-m3.1-flash"
+    rpm: 30
+    tpm: 8000
+    temperature: 1.0
+    limits:
+      "groq/openai/gpt-oss-120b":
+        rpm: 30
+        tpm: 8000
+      "gemini/gemini-3.8-flash":
+        rpm: 5
+        tpm: 250000
+      "nvidia_nim/minimaxai/minimax-m3.1-flash":
+        rpm: 35
+        tpm: 120000
+
+  debugger:
+    model: "groq/openai/gpt-oss-120b"
+    provider: groq
+    fallback:
+      - "groq/qwen/qwen3.8-27b"
+      - "gemini/gemini-3.8-flash"
+      - "nvidia_nim/minimaxai/minimax-m3.1-flash"
+    rpm: 30
+    tpm: 8000
+    temperature: 0.0
+    limits:
+      "groq/qwen/qwen3.8-27b":
+        rpm: 30
+        tpm: 8000
+      "gemini/gemini-3.8-flash":
+        rpm: 5
+        tpm: 250000
+      "nvidia_nim/minimaxai/minimax-m3.1-flash":
+        rpm: 35
+        tpm: 120000
+
+  test_designer:
+    model: "gemini/gemma-4-31b-it"
+    provider: gemini
+    fallback:
+      - "groq/openai/gpt-oss-120b"
+      - "gemini/gemini-3.8-flash"
+      - "openai/gpt-4.1"
+    rpm: 30
+    tpm: 16000
+    temperature: 0.2
+    limits:
+      "groq/openai/gpt-oss-120b":
+        rpm: 30
+        tpm: 8000
+      "gemini/gemini-3.8-flash":
+        rpm: 5
+        tpm: 250000
+      "openai/gpt-4.1":
+        rpm: 3
+        tpm: 10000

@@ -1,0 +1,108 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oracle-hcm"
+version = "0.1.0"
+description = "Oracle-HCM AI Auto-Coding Engine"
+requires-python = ">=3.12"
+dependencies = [
+    "litellm",
+    "pydantic",
+    "cryptography",
+    "networkx",
+    "qdrant-client",
+    "redis",
+    "docker",
+    "python-dotenv",
+    "fastapi",
+    "uvicorn",
+    "pyyaml",
+    "pytest",
+    "pytest-asyncio",
+    "argon2-cffi",
+    "pyjwt",
+    "pip-audit",
+]
+
+[project.optional-dependencies]
+dev = ["mypy", "ruff", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+oracle_hcm = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+show_error_codes = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["litellm.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["qdrant_client.*", "grpc.*", "google.*", "docker.*"]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["sandbox", ".venv", "data", "keys"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TID", "PTH", "RUF", "S", "ANN", "ASYNC", "C4", "DTZ", "T20"]
+ignore = [
+    "S101",  # assert is used in tests
+    "ANN401",  # Any is required at LLM/JSON boundaries
+    "B008",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "ANN", "T20", "PTH"]
+"scripts/**" = ["T20"]
+"src/oracle_hcm/llm/**" = ["S"]
+"src/oracle_hcm/__main__.py" = ["T201"]
+# These two modules name the writable tmpfs mounts of the sandbox container.
+# They are container paths of a hardened sandbox, not temporary files of the host.
+"src/oracle_hcm/services/sandbox.py" = ["S108"]
+"src/oracle_hcm/security/suite_runner.py" = ["S108"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q --strict-markers"
+markers = [
+    "integration: requires a locally running Redis instance",
+    "docker: requires the docker daemon and the sandbox image",
+]
+
+[tool.coverage.run]
+source = ["src/oracle_hcm"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
