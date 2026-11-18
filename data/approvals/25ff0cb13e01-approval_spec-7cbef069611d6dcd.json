@@ -1,0 +1,37 @@
+{
+  "approval_id": "25ff0cb13e01-approval_spec-7cbef069611d6dcd",
+  "run_id": "25ff0cb13e01",
+  "gate_id": "approval_spec",
+  "stage": 1,
+  "artifact_type": "requirements",
+  "artifact": {
+    "requirement_id": "REQ-001",
+    "title": "Geofenced Time‑Punch Validation Microservice Function",
+    "description": "Implement a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict` that validates that the punch is within 100 meters of the office location (latitude 12.9716, longitude 77.5946) and that the timestamp is between 06:00 and 22:00 local office time. The function must return a dictionary with keys `valid` (bool) and `reason` (string). The implementation must use strictly typed Pydantic models for input and output.",
+    "acceptance_criteria": [
+      "When a punch is recorded within 100 m of the office and the timestamp is 09:15 local time, the function returns `{\"valid\": true, \"reason\": \"Punch accepted\"}`.",
+      "When a punch is recorded outside 100 m of the office, the function returns `{\"valid\": false, \"reason\": \"Location out of range\"}`.",
+      "When a punch is recorded within range but the timestamp is outside the 06:00‑22:00 window, the function returns `{\"valid\": false, \"reason\": \"Time out of allowed range\"}`."
+    ],
+    "domain_entities": [],
+    "entities": [],
+    "relationships": [],
+    "task_type": "feature",
+    "constraints": [],
+    "non_functional_requirements": [],
+    "risk_keywords": [
+      "money",
+      "payroll",
+      "access",
+      "deletion"
+    ],
+    "declared_permissions": [],
+    "source": null
+  },
+  "requested_at": "2026-11-17T13:15:08.636038+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T13:15:14.204724+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "7cbef069611d6dcd1c581f7d6546ea485a3d833749927ba1e6c9277954b9d723"
+}

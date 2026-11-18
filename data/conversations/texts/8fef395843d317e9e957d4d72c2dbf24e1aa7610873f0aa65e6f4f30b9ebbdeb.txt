@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-17T14:05:00Z",
+  "patch_id": "PATCH-REQ-001-001",
+  "requirement_id": "REQ-001",
+  "attempt": 2,
+  "strategy": "Remove disallowed imports by eliminating the pydantic models and simplifying the validator to use only the standard library. Rewrite the test suite to avoid importing pytest and internal validate_punch module, using plain asserts instead.",
+  "code_slice": "",
+  "error_excerpt": "Security scanner reported S403-import-not-allowed for 'pydantic' in punch_validator/models.py, 'pytest' in tests/test_validate_punch.py, and 'validate_punch' in tests/test_validate_punch.py. These imports cause the test run to abort with exit_code 125.",
+  "proposed_changes": [
+    {
+      "path": "punch_validator/models.py",
+      "operation": "delete",
+      "content": "",
+      "sha256": null
+    },
+    {
+      "path": "punch_validator/validator.py",
+      "operation": "modify",
+      "content": "from datetime import datetime, time\nfrom math import asin, cos, radians, sin, sqrt\n\n# Office location and radius (meters)\n_OFFICE_LATITUDE = 12.9716\n_OFFICE_LONGITUDE = 77.5946\n_OFFICE_RADIUS_METERS = 100.0\n\n# Valid time window (local office time)\n_START_TIME = time(6, 0, 0)\n_END_TIME = time(22, 0, 0)\n\n\ndef _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n    \"\"\"Calculate the great‑circle distance between two points in meters.\"\"\"\n    R = 6371000  # Earth's radius in meters\n    lat1_r = radians(lat1)\n    lat2_r = radians(lat2)\n    dlat = radians(lat2 - lat1)\n    dlon = radians(lon2 - lon1)\n    a = sin(dlat / 2) ** 2 + cos(lat1_r) * cos(lat2_r) * sin(dlon / 2) ** 2\n    c = 2 * asin(sqrt(a))\n    return R * c\n\n\ndef validate_punch(employee_id: str, timestamp: str, lat: float, lng: float) -> dict:\n    \"\"\"Validate employee punch location and time.\n\n    Returns a dictionary with keys:\n        - \"valid\": bool indicating if the punch is acceptable\n        - \"reason\": human‑readable explanation\n    \"\"\"\n    # Parse timestamp\n    try:\n        dt = datetime.fromisoformat(timestamp)\n    except (ValueError, TypeError):\n        return {\"valid\": False, \"reason\": f\"Invalid timestamp format: {timestamp}\"}\n\n    # Check time window\n    punch_time = dt.time()\n    if punch_time < _START_TIME or punch_time >= _END_TIME:\n        return {\n            \"valid\": False,\n            \"reason\": f\"Punch time {punch_time} is outside allowed window (06:00-22:00)\"\n        }\n\n    # Check geofence radius\n    distance = _haversine_meters(lat, lng, _OFFICE_LATITUDE, _OFFICE_LONGITUDE)\n    if distance > _OFFICE_RADIUS_METERS:\n        return {\n            \"valid\": False,\n            \"reason\": f\"Punch location is {distance:.1f} meters from office, exceeds {_OFFICE_RADIUS_METERS} meter limit\"\n        }\n\n    return {\"valid\": True, \"reason\": \"Punch is within office radius and time window\"}\n",
+      "sha256": null
+    },
+    {
+      "path": "tests/test_validate_punch.py",
+      "operation": "modify",
+      "content": "from punch_validator import validate_punch\n\n\

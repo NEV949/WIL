@@ -1,0 +1,66 @@
+{
+  "edges": [
+    {
+      "kind": "belongs_to",
+      "source": "entity:Attendance",
+      "target": "entity:Employee"
+    },
+    {
+      "kind": "references",
+      "source": "entity:Punch",
+      "target": "entity:Attendance"
+    },
+    {
+      "kind": "handles",
+      "source": "file:pkg/attendance.py",
+      "target": "entity:Attendance"
+    },
+    {
+      "kind": "handles",
+      "source": "file:pkg/employee.py",
+      "target": "entity:Employee"
+    }
+  ],
+  "nodes": [
+    {
+      "attributes": [],
+      "description": "One day of attendance.",
+      "id": "entity:Attendance",
+      "kind": "entity",
+      "name": "Attendance"
+    },
+    {
+      "attributes": [],
+      "description": "One employee of the company.",
+      "id": "entity:Employee",
+      "kind": "entity",
+      "name": "Employee"
+    },
+    {
+      "attributes": [],
+      "description": "One punch of a day.",
+      "id": "entity:Punch",
+      "kind": "entity",
+      "name": "Punch"
+    },
+    {
+      "id": "file:pkg/attendance.py",
+      "kind": "file",
+      "name": "pkg/attendance.py",
+      "path": "pkg/attendance.py"
+    },
+    {
+      "id": "file:pkg/employee.py",
+      "kind": "file",
+      "name": "pkg/employee.py",
+      "path": "pkg/employee.py"
+    },
+    {
+      "id": "file:tests/test_attendance.py",
+      "kind": "file",
+      "name": "tests/test_attendance.py",
+      "path": "tests/test_attendance.py"
+    }
+  ],
+  "requirement_id": "REQ-ATT"
+}

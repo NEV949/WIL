@@ -1,0 +1,54 @@
+{
+  "approval_id": "25ff0cb13e01-approval_tests-6e3b5767ea1baada",
+  "run_id": "25ff0cb13e01",
+  "gate_id": "approval_tests",
+  "stage": 2,
+  "artifact_type": "tests",
+  "artifact": {
+    "schema_version": "1.0",
+    "created_at": "2026-11-17T13:45:00Z",
+    "suite_id": "suite-REQ-001-001",
+    "requirement_id": "REQ-001",
+    "tests": [
+      {
+        "test_id": "test_valid_punch",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "def test_valid_punch():\n    from datetime import datetime\n    from mymodule import validate_punch\n    result = validate_punch(\n        employee_id=123,\n        timestamp=datetime(2023, 1, 1, 9, 15),\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result == {\"valid\": True, \"reason\": \"Punch accepted\"}\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_location_out_of_range",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "def test_location_out_of_range():\n    from datetime import datetime\n    from mymodule import validate_punch\n    # Coordinates far from office (>100m)\n    result = validate_punch(\n        employee_id=124,\n        timestamp=datetime(2023, 1, 1, 10, 0),\n        lat=12.9816,\n        lng=77.6046,\n    )\n    assert result == {\"valid\": False, \"reason\": \"Location out of range\"}\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_time_out_of_range",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "def test_time_out_of_range():\n    from datetime import datetime\n    from mymodule import validate_punch\n    # Within location range but time outside allowed window\n    result = validate_punch(\n        employee_id=125,\n        timestamp=datetime(2023, 1, 1, 23, 0),\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result == {\"valid\": False, \"reason\": \"Time out of allowed range\"}\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      }
+    ]
+  },
+  "requested_at": "2026-11-17T13:17:03.818078+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T13:17:14.105786+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "6e3b5767ea1baada84d1598ab2aeec5a04cc180868aacbaee34231e5c4d07ae4"
+}

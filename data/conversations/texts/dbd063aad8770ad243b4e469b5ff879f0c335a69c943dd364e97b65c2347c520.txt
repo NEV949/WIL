@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2024-05-20T12:00:00Z",
+  "patch_id": "patch-req-001-geofenced-punch",
+  "requirement_id": "REQ-001",
+  "summary": "Implemented a geofenced time-punch validation microservice function that validates employee punches based on location and time using typed Pydantic models.",
+  "files": [
+    {
+      "path": "microservice.py",
+      "operation": "create",
+      "content": "from datetime import datetime, time\nfrom pydantic import BaseModel, Field\nfrom typing import Union\nimport math\n\nOFFICE_LAT = 12.9716\nOFFICE_LNG = 77.5946\nRADIUS_METERS = 100.0\nMIN_TIME = time(6, 0, 0)\nMAX_TIME = time(22, 0, 0)\n\nclass ValidationResult(BaseModel):\n    valid: bool\n    reason: str\n\ndef haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"\n    Calculate the great-circle distance between two points on the Earth's surface in meters.\n    \"\"\"\n    R = 6371000  # Earth's radius in meters\n\n    lat1_rad = math.radians(lat1)\n    lat2_rad = math.radians(lat2)\n    dlat = lat2_rad - lat1_rad\n    dlng = math.radians(lng2) - math.radians(lng1)\n\n    a = (math.sin(dlat / 2) ** 2 +\n         math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2)\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))\n\n    return R * c\n\ndef validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict:\n    \"\"\"\n    Validate a time punch based on location and time.\n    \"\"\"\n    # 1. Location validation\n    distance = haversine(OFFICE_LAT, OFFICE_LNG, lat, lng)\n    if distance > RADIUS_METERS:\n        result = ValidationResult(valid=False, reason=\"Location is outside the allowed geofence\")\n        return result.model_dump()\n\n    # 2. Time validation\n    current_time = timestamp.time()\n    if current_time < MIN_TIME or current_time > MAX_TIME:\n        result = ValidationResult(valid=False, reason=\"Timestamp is outside the allowed window\")\n        return result.model_dump()\n\n    # 3. Success\n    result = ValidationResult(valid=True, reason=\"Punch accepted\")\n    return result.model_dump()\n",
+      "sha256": "abc123"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-17T13:45:00Z",
+  "patch_id": "REQ-PUNCH-001-PATCH-001",
+  "requirement_id": "REQ-PUNCH-001",
+  "summary": "Add geofenced and time-restricted punch validation microservice with strict Pydantic models.",
+  "files": [
+    {
+      "path": "src/services/__init__.py",
+      "operation": "create",
+      "content": ""
+    },
+    {
+      "path": "src/services/punch_validation.py",
+      "operation": "create",
+      "content": "from __future__ import annotations\n\nfrom datetime import datetime, time\nfrom math import radians, sin, cos, sqrt, atan2\nfrom typing import Optional\n\nfrom pydantic import BaseModel, Field, validator\nfrom zoneinfo import ZoneInfo\n\n\nclass OfficeLocation(BaseModel):\n    latitude: float = Field(..., ge=-90, le=90)\n    longitude: float = Field(..., ge=-180, le=180)\n    geofence_radius_meters: float = Field(..., gt=0)\n    timezone: str = \"Asia/Kolkata\"\n\n\nclass PunchRequest(BaseModel):\n    employee_id: str\n    timestamp: datetime\n    lat: float = Field(..., ge=-90, le=90)\n    lng: float = Field(..., ge=-180, le=180)\n\n    @validator(\"timestamp\")\n    def ensure_timezone_aware(cls, v: datetime) -> datetime:\n        if v.tzinfo is None:\n            raise ValueError(\"timestamp must be timezone-aware\")\n        return v\n\n\nclass PunchValidationResult(BaseModel):\n    valid: bool\n    reason: Optional[str] = None\n\n\nOFFICE = OfficeLocation(\n    latitude=12.9716,\n    longitude=77.5946,\n    geofence_radius_meters=100.0,\n    timezone=\"Asia/Kolkata\",\n)\n\n\ndef _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"Return distance in meters between two lat/lon points using the Haversine formula.\"\"\"\n    R = 6371000.0  # Earth radius in meters\n    phi1, phi2 = radians(lat1), radians(lat2)\n    dphi = radians(lat2 - lat1)\n    dlambda = radians(lng2 - lng1)\n\n    a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2\n    c = 2 * atan2(sqrt(a), sqrt(1 - a))\n    return R * c\n\n\ndef validate_punch(employee_id: str, timestamp: datetime, lat: float, lng: float) -> PunchValidationResult:\n    \"\"\"\n    Validate a punch based on geofence (100 m) and allowed time window (06:00‑22:00)\n    in the office's local timezone (Asia/Kolkata).\n\n    Returns a PunchValidationResult indicating validity and an optional reason.\n    \"\"\"\n    try:\n        request = PunchRequest(employee_id=employee_id, timestamp=timestamp, lat=lat, lng=lng)\n    except Exception as e:\n        return PunchValidationResult(valid=False, reason=str(e))\n\n    # Geofence check\n    distance = _haversine_distance(request.lat, request.lng, OFFICE.latitude, OFFICE.longitude)\n    in_geofence = distance <= OFFICE.geofence_radius_meters\n\n    # Time window check\n    local_dt = request.timestamp.astimezone(ZoneInfo(OFFICE.timezone))\n    start = time(6, 0, 0)\n    end = time(22, 0, 0)\n    in_time_window = start <= local_dt.time() <= end\n\n    if in_geofence and in_time_window:\n        return PunchValidationResult(valid=True)\n\n    reasons = []\n    if not in_geofence:\n        reasons.append(f\"Geofence violation: {distance:.1f} m outside allowed {OFFICE.geofence_radius_meters} m radius.\")\n    if not in_time_window:\n        reasons.append(\"Time window violation: punch outside 06:00‑22:00 office local time.\")\n    return PunchValidationResult(valid=False, reason=\"; \".join(reasons))\n"
+    }
+  ]
+}

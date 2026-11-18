@@ -1,0 +1,20 @@
+{
+  "approval_id": "run-REQ-PUNCH-001-PATCH-001-1794943950-risk_tier-9d54668e9f8f513c",
+  "run_id": "1015b33bed12",
+  "gate_id": "risk_tier",
+  "stage": 0,
+  "artifact_type": "risk_assessment",
+  "artifact": {
+    "risk_tier": "high",
+    "signals": [
+      "keyword:payroll"
+    ]
+  },
+  "tenant_id": "tenant-a",
+  "requested_at": "2026-11-17T19:33:28.565398+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T19:55:47.011503+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "9d54668e9f8f513c8bd6970c22e15b31187719cd7507ca75bfb13f7743594e77"
+}

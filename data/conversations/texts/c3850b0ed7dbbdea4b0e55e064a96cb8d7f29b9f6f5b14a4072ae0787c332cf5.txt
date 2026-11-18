@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-18T12:00:00Z",
+  "patch_id": "patch-REQ-PUNCH-001-001",
+  "requirement_id": "REQ-PUNCH-001",
+  "summary": "Implement geofence and working‑hours validation for employee time‑punch with strict Pydantic v2 models and a validate_punch function.",
+  "files": [
+    {
+      "path": "pyproject.toml",
+      "operation": "create",
+      "content": "[project]\nname = \"punch-validation\"\nversion = \"0.1.0\"\ndescription = \"Employee time‑punch validation service\"\nreadme = \"README.md\"\nrequires-python = \">=3.10\"\nauthors = [{ name = \"Engineering\" }]\ndynamic = [\"dependencies\"]\ndependencies = []\n\n[project.optional-dependencies]\ndev = [\n    \"mypy==1.11.0\",\n    \"pydantic==2.9.0\",\n    \"pydantic-extra-types==2.9.0\"\n]\n\n[build-system]\nrequires = [\"setuptools>=61.0\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[tool.mypy]\nstrict = true\npython_version = \"3.10\"\nwarn_unreachable = true\nno_implicit_optional = true\nwarn_redundant_casts = true\nwarn_unused_ignores = true\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/__init__.py",
+      "operation": "create",
+      "content": "\"\"\"Punch validation package exposing the public API.\"\"\"\n\nfrom .models import OfficeLocation, PunchEvent, ValidationResult\nfrom .service import validate_punch\n\n__all__: list[str] = [\n    \"OfficeLocation\",\n    \"PunchEvent\",\n    \"ValidationResult\",\n    \"validate_punch\",\n]\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/models.py",
+      "operation": "create",
+      "content": "from __future__ import annotations\n\nfrom datetime import datetime, time\nfrom typing import Optional\n\nfrom pydantic import BaseModel, Field, StrictBool, StrictFloat, StrictStr\n\n\nclass OfficeLocation(BaseModel):\n    \"\"\"Configuration for the office geofence and working hours.\"\"\"\n\n    latitude: StrictFloat = Field(..., description=\"Office latitude in decimal degrees\")\n    longitude: StrictFloat = Field(..., description=\"Office longitude in decimal degrees\")\n    radius_meters: StrictFloat = Field(..., gt=0, description=\"Allowed radius around the office in metres\")\n    timezone: StrictStr = Field(..., description=\"IANA time‑zone identifier for the office location\")\n    start_time: time = Field(..., description=\"Inclusive start of allowed working hours (local time)\")\n    end_time: time = Field(..., description=\"Inclusive end of allowed working hours (local time)\")\n\n    model_config = {\n        \"strict\": True,\n        \"populate_by_name\": True,\n    }\n\n\nclass PunchEvent(BaseModel):\n    \"\"\"Employee punch attempt with spatial and temporal data.\"\"\"\n\n    employee_id: StrictStr = Field(..., min_length=1)\n    timestamp: datetime = Field(..., description=\"UTC timestamp of the punch\")\n    lat: StrictFloat = Field(..., description=\"Latitude of the punch location\")\n    lng: StrictFloat = Field(..., description=\"Longitude of the punch location\")\n\n    model_config = {\"strict\": True}\n\n\nclass ValidationResult(BaseModel):\n    \"\"\"Result of validating a punch event.\"\"\"\n\n    valid: StrictBool\n    reason: Optional[StrictStr] = None\n\n    model_config = {\"strict\": True}\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/service.py",
+      "operation": "create",
+      "content": "from __future__ import annotations\n\nfrom datetime import datetime, time\nfrom math import radians, sin, cos, sqrt, atan2\nfrom zoneinfo import ZoneInfo\nfrom typing import Final\n\nfrom .models import OfficeLocation, PunchEvent, ValidationResult\n\n# Fixed office configuration as required by the specification\nDEFAULT_OFFICE: Final[OfficeLocation] = OfficeLocation(\n    latitude=12.9716,\n    longitude=77.5946,\n    radius_meters=100.0,\n    timezone=\"Asia/Kolkata\",\n    start_time=time(6, 0, 0),\n    end_time=time(22, 0, 0),\n)\n\n\ndef _haversine_distance_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"Return the great‑circle distance between two points on Earth in metres.\n\n    Implements the haversine formula using a mean Earth radius of 6 371 000 m.\n    \"\"\"\n    radius_earth_m: Final[float] = 6_371_000.0\n    phi1, phi2 = radians(lat1), radians(lat2)\n    d_phi = radians(lat2 - lat1)\n    d_lambda = radians(lng2 - lng1)\n    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2\n    c = 2 * atan2(sqrt(a), sqrt(1 - a))\n    return radius_earth_m * c\n\n\ndef _is_within_business_hours(ts_utc: datetime, office: OfficeLocation) -> bool:\n    \"\"\"Check whether *ts_utc* falls within the office's allowed local time window.\n\n    The timestamp is first converted to the office's timezone.\n    The start and end times are inclusive.\n    \"\"\"\n    local_dt = ts_utc.astimezone(ZoneInfo(office.timezone))\n    local_time = local_dt.time()\n    if office.start_time <= office.end_time:\n        return office.start_time <= local_time <= office.end_time\n    # Edge case where the window spans midnight (not needed for current config)\n    return local_time >= office.start_time or local_time <= office.end_time\n\n\ndef validate_punch(event: PunchEvent) -> ValidationResult:\n    \"\"\"Validate *event* against the fixed office geofence and business hours.\n\n    Returns a :class:`ValidationResult` indicating success or the reason for failure.\n    \"\"\"\n    # Geofence check\n    distance = _haversine_distance_m(\n        event.lat, event.lng, DEFAULT_OFFICE.latitude, DEFAULT_OFFICE.longitude\n    )\n    if distance > DEFAULT_OFFICE.radius_meters:\n        return ValidationResult(\n            valid=False,\n            reason=f\"Location {distance:.1f} m away exceeds allowed {DEFAULT_OFFICE.radius_meters:.0f} m radius.\",\n        )\n\n    # Business‑hours check (timestamp is assumed to be UTC)\n    if not _is_within_business_hours(event.timestamp, DEFAULT_OFFICE):\n        local_dt = event.timestamp.astimezone(ZoneInfo(DEFAULT_OFFICE.timezone))\n        return ValidationResult(\n            valid=False,\n            reason=f\"Local time {local_dt.time().isoformat()} outside allowed window {DEFAULT_OFFICE.start_time.isoformat()}–{DEFAULT_OFFICE.end_time.isoformat()}.\",\n        )\n\n    # All checks passed\n    return ValidationResult(valid=True, reason=None)\n",
+      "sha256": null
+    }
+  ]
+}

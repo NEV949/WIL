@@ -1,0 +1,60 @@
+{
+  "requirement_id": "REQ-001",
+  "title": "Geofenced Time‑Punch Validation Microservice Function",
+  "description": "Implement a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> ValidationResult` that validates an employee punch‑in/out. The function must verify that the geographic location is within 100 meters of the office coordinates (12.9716, 77.5946) and that the timestamp falls between 06:00 and 22:00 office local time. The function returns a JSON object `{ \"valid\": bool, \"reason\": str }`. The implementation must use strictly typed Pydantic models for input and output.",
+  "acceptance_criteria": [
+    "Given a punch at (12.9716, 77.5946) at 09:30 local time, `validate_punch` returns `{\"valid\": true, \"reason\": \"Punch accepted\"}`.",
+    "Given a punch 200 m away from the office, the function returns `{\"valid\": false, \"reason\": \"Location out of range\"}`.",
+    "Given a punch at 05:45 local time, the function returns `{\"valid\": false, \"reason\": \"Time outside allowed window\"}`."
+  ],
+  "domain_entities": [
+    "Employee",
+    "Punch"
+  ],
+  "entities": [
+    {
+      "name": "Employee",
+      "description": "Represents an employee who can perform a punch.",
+      "attributes": [
+        "employee_id",
+        "name",
+        "department"
+      ]
+    },
+    {
+      "name": "Punch",
+      "description": "Record of a punch event.",
+      "attributes": [
+        "employee_id",
+        "timestamp",
+        "latitude",
+        "longitude"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "Punch",
+      "target": "Employee",
+      "kind": "references",
+      "description": "Each punch references the employee who performed it."
+    }
+  ],
+  "task_type": "feature",
+  "constraints": [
+    "Use only standard Python library and Pydantic.",
+    "No external geolocation services."
+  ],
+  "non_functional_requirements": [
+    "The function must respond within 50 ms.",
+    "The code must be type‑checked with mypy."
+  ],
+  "risk_keywords": [
+    "money",
+    "payroll",
+    "access",
+    "deletion"
+  ],
+  "declared_permissions": [],
+  "source": null
+}

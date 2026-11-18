@@ -1,0 +1,372 @@
+{
+  "run_id": "1015b33bed12",
+  "sop_id": "sop_lightweight",
+  "tenant_id": "tenant-a",
+  "request": "Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models",
+  "status": "failed",
+  "step_index": 0,
+  "suspended_step": null,
+  "outputs": {
+    "requirements": {
+      "requirement_id": "REQ-PUNCH-001",
+      "title": "Geofenced and Time-Restricted Punch Validation Microservice Function",
+      "description": "Implement a Python microservice function `validate_punch(employee_id, timestamp, lat, lng)` using strictly typed Pydantic models for inputs and outputs. The function evaluates whether an employee punch falls within 100 meters of the office location at (12.9716, 77.5946) and occurs between 06:00 and 22:00 local office time (Asia/Kolkata timezone). It returns an object indicating validity and an explanatory reason.",
+      "acceptance_criteria": [
+        "Given coordinates within 100 meters of (12.9716, 77.5946) and a timestamp between 06:00 and 22:00 local office time, `validate_punch` returns `valid=True` and `reason=None` (or a success confirmation message).",
+        "Given coordinates farther than 100 meters from the office location, `validate_punch` returns `valid=False` and a reason detailing geofence violation.",
+        "Given a timestamp outside the 06:00 to 22:00 local office time window, `validate_punch` returns `valid=False` and a reason detailing the time window violation.",
+        "Input parameters and return values are strictly validated using Pydantic models (e.g., PunchRequest and PunchValidationResult containing `valid: bool` and `reason: Optional[str]`)."
+      ],
+      "domain_entities": [
+        "PunchRequest",
+        "PunchValidationResult",
+        "OfficeLocation"
+      ],
+      "entities": [
+        {
+          "name": "PunchRequest",
+          "description": "Represents the incoming punch payload submitted by an employee.",
+          "attributes": [
+            "employee_id",
+            "timestamp",
+            "lat",
+            "lng"
+          ]
+        },
+        {
+          "name": "PunchValidationResult",
+          "description": "The result object returned by the punch validation service.",
+          "attributes": [
+            "valid",
+            "reason"
+          ]
+        },
+        {
+          "name": "OfficeLocation",
+          "description": "Reference office location and geofence parameters.",
+          "attributes": [
+            "latitude",
+            "longitude",
+            "geofence_radius_meters",
+            "timezone"
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "PunchRequest",
+          "target": "PunchValidationResult",
+          "kind": "evaluates_to",
+          "description": "A PunchRequest is evaluated by validate_punch to produce a PunchValidationResult."
+        },
+        {
+          "source": "PunchRequest",
+          "target": "OfficeLocation",
+          "kind": "validated_against",
+          "description": "A PunchRequest is validated against the OfficeLocation coordinates and timezone."
+        }
+      ],
+      "task_type": "feature",
+      "constraints": [
+        "Geodesic distance calculation must accurately measure the 100-meter radius using the Haversine or geodesic formula.",
+        "Office coordinates are fixed at latitude 12.9716 and longitude 77.5946 (Asia/Kolkata).",
+        "Allowed punch window is strictly between 06:00:00 and 22:00:00 local office time.",
+        "Must use strictly typed Pydantic models for data validation and response serialization."
+      ],
+      "non_functional_requirements": [
+        "Sub-millisecond validation computation time.",
+        "Deterministic geofence calculation precision."
+      ],
+      "risk_keywords": [
+        "payroll",
+        "money",
+        "access",
+        "deletion"
+      ],
+      "declared_permissions": [],
+      "source": null
+    },
+    "code": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T13:45:00Z",
+      "patch_id": "REQ-PUNCH-001-PATCH-001",
+      "requirement_id": "REQ-PUNCH-001",
+      "summary": "Add geofenced and time-restricted punch validation microservice with strict Pydantic models.",
+      "files": [
+        {
+          "path": "src/services/__init__.py",
+          "operation": "create",
+          "content": "",
+          "sha256": null
+        },
+        {
+          "path": "src/services/punch_validation.py",
+          "operation": "create",
+          "content": "from __future__ import annotations\n\nfrom datetime import datetime, time\nfrom math import radians, sin, cos, sqrt, atan2\nfrom typing import Optional\n\nfrom pydantic import BaseModel, Field, validator\nfrom zoneinfo import ZoneInfo\n\n\nclass OfficeLocation(BaseModel):\n    latitude: float = Field(..., ge=-90, le=90)\n    longitude: float = Field(..., ge=-180, le=180)\n    geofence_radius_meters: float = Field(..., gt=0)\n    timezone: str = \"Asia/Kolkata\"\n\n\nclass PunchRequest(BaseModel):\n    employee_id: str\n    timestamp: datetime\n    lat: float = Field(..., ge=-90, le=90)\n    lng: float = Field(..., ge=-180, le=180)\n\n    @validator(\"timestamp\")\n    def ensure_timezone_aware(cls, v: datetime) -> datetime:\n        if v.tzinfo is None:\n            raise ValueError(\"timestamp must be timezone-aware\")\n        return v\n\n\nclass PunchValidationResult(BaseModel):\n    valid: bool\n    reason: Optional[str] = None\n\n\nOFFICE = OfficeLocation(\n    latitude=12.9716,\n    longitude=77.5946,\n    geofence_radius_meters=100.0,\n    timezone=\"Asia/Kolkata\",\n)\n\n\ndef _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"Return distance in meters between two lat/lon points using the Haversine formula.\"\"\"\n    R = 6371000.0  # Earth radius in meters\n    phi1, phi2 = radians(lat1), radians(lat2)\n    dphi = radians(lat2 - lat1)\n    dlambda = radians(lng2 - lng1)\n\n    a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2\n    c = 2 * atan2(sqrt(a), sqrt(1 - a))\n    return R * c\n\n\ndef validate_punch(employee_id: str, timestamp: datetime, lat: float, lng: float) -> PunchValidationResult:\n    \"\"\"\n    Validate a punch based on geofence (100 m) and allowed time window (06:00‑22:00)\n    in the office's local timezone (Asia/Kolkata).\n\n    Returns a PunchValidationResult indicating validity and an optional reason.\n    \"\"\"\n    try:\n        request = PunchRequest(employee_id=employee_id, timestamp=timestamp, lat=lat, lng=lng)\n    except Exception as e:\n        return PunchValidationResult(valid=False, reason=str(e))\n\n    # Geofence check\n    distance = _haversine_distance(request.lat, request.lng, OFFICE.latitude, OFFICE.longitude)\n    in_geofence = distance <= OFFICE.geofence_radius_meters\n\n    # Time window check\n    local_dt = request.timestamp.astimezone(ZoneInfo(OFFICE.timezone))\n    start = time(6, 0, 0)\n    end = time(22, 0, 0)\n    in_time_window = start <= local_dt.time() <= end\n\n    if in_geofence and in_time_window:\n        return PunchValidationResult(valid=True)\n\n    reasons = []\n    if not in_geofence:\n        reasons.append(f\"Geofence violation: {distance:.1f} m outside allowed {OFFICE.geofence_radius_meters} m radius.\")\n    if not in_time_window:\n        reasons.append(\"Time window violation: punch outside 06:00‑22:00 office local time.\")\n    return PunchValidationResult(valid=False, reason=\"; \".join(reasons))\n",
+          "sha256": null
+        }
+      ]
+    },
+    "tests": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T13:45:00Z",
+      "suite_id": "punch_validation_suite_001",
+      "requirement_id": "REQ-PUNCH-001",
+      "tests": [
+        {
+          "test_id": "test_valid_punch_within_geofence_and_time",
+          "requirement_ids": [
+            "REQ-PUNCH-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_valid_punch_within_geofence_and_time():\n    # Coordinates within ~50 meters of office location (12.9716, 77.5946)\n    lat = 12.9719\n    lng = 77.5949\n    # Timestamp at 09:30 local time (Asia/Kolkata)\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 9, 30, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E123', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is True\n    assert result.reason is None or result.reason == ''\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        },
+        {
+          "test_id": "test_geofence_violation",
+          "requirement_ids": [
+            "REQ-PUNCH-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_geofence_violation():\n    # Coordinates far from office (> 100 meters)\n    lat = 12.9750\n    lng = 77.6000\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 10, 0, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E124', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is False\n    assert 'geofence' in (result.reason or '').lower()\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        },
+        {
+          "test_id": "test_time_window_violation",
+          "requirement_ids": [
+            "REQ-PUNCH-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_time_window_violation():\n    # Valid coordinates within geofence\n    lat = 12.9716\n    lng = 77.5946\n    # Timestamp at 23:15 local time (outside allowed window)\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 23, 15, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E125', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is False\n    assert 'time' in (result.reason or '').lower()\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        },
+        {
+          "test_id": "test_pydantic_input_validation_error",
+          "requirement_ids": [
+            "REQ-PUNCH-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import pytest\nfrom myservice import validate_punch, PunchRequest\n\ndef test_pydantic_input_validation_error():\n    # Missing required field 'lat' should raise a validation error\n    with pytest.raises(ValueError):\n        request = PunchRequest(employee_id='E126', timestamp='2023-05-15T10:00:00+05:30', lng=77.5946)\n        validate_punch(request)\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        }
+      ]
+    },
+    "sandbox_run": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T19:32:30.867175+00:00",
+      "run_id": "run-REQ-PUNCH-001-PATCH-001-1794943950",
+      "requirement_id": "REQ-PUNCH-001",
+      "command": "/opt/venv/bin/python /workspace/_oracle_runner.py -q -p no:cacheprovider -rA tests --cov src --cov-report term",
+      "exit_code": 2,
+      "stdout": "\n==================================== ERRORS ====================================\n________________ ERROR collecting tests/test_validate_punch.py _________________\nImportError while importing test module '/workspace/tests/test_validate_punch.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/usr/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests/test_validate_punch.py:6: in <module>\n    from myservice import validate_punch, PunchRequest\nE   ImportError: cannot import name 'validate_punch' from 'myservice' (/workspace/myservice.py)\n=========================== short test summary info ============================\nERROR tests/test_validate_punch.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 2.97s\n=== ORACLE_SECURITY_EVENTS ===\n[]\n",
+      "stderr": "",
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 13.469,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [
+        "myservice.py",
+        "src/services/__init__.py",
+        "src/services/punch_validation.py",
+        "tests/test_validate_punch.py",
+        "_scanners/ast_policy.py",
+        "_scanners/ast_runner.py",
+        "_scanners/import_policy.json",
+        "_scanners/oracle_rules.yml"
+      ],
+      "passed_tests": [],
+      "failed_tests": [
+        "tests/test_validate_punch.py"
+      ],
+      "risk_tier": "low",
+      "risk_signals": [],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": null,
+      "deterministic": false,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\1015b33bed12",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    },
+    "security_gate": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T19:33:11.219361+00:00",
+      "run_id": "security-run-REQ-PUNCH-001-PATCH-001-1794943950",
+      "requirement_id": "REQ-PUNCH-001",
+      "command": "security_gate",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 0.0,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "risk_tier": "high",
+      "risk_signals": [
+        "keyword:payroll"
+      ],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": null,
+      "deterministic": false,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\1015b33bed12",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    },
+    "acceptance_gate": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T19:33:28.567019+00:00",
+      "run_id": "acceptance-run-REQ-PUNCH-001-PATCH-001-1794943950",
+      "requirement_id": "REQ-PUNCH-001",
+      "command": "acceptance_gate",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "tests_passed": 0,
+      "tests_failed": 1,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 0.0,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "risk_tier": "high",
+      "risk_signals": [
+        "keyword:payroll"
+      ],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": {
+        "conditions": [
+          {
+            "name": "tests_pass",
+            "passed": false,
+            "detail": "0 passed, 1 failed (exit code 2)"
+          },
+          {
+            "name": "mypy_strict_clean",
+            "passed": true,
+            "detail": "mypy --strict reported no error"
+          },
+          {
+            "name": "coverage_target",
+            "passed": false,
+            "detail": "coverage 0.00% against a target of 80%"
+          },
+          {
+            "name": "security_clean",
+            "passed": true,
+            "detail": "no high or critical finding"
+          },
+          {
+            "name": "requirements_covered",
+            "passed": false,
+            "detail": "every requirement has a passing test"
+          },
+          {
+            "name": "deterministic",
+            "passed": true,
+            "detail": "two runs of the suite produced the same result"
+          },
+          {
+            "name": "human_approval_for_high_risk",
+            "passed": true,
+            "detail": "the task is high risk and needs the approval run-REQ-PUNCH-001-PATCH-001-1794943950-risk_tier-9d54668e9f8f513c"
+          }
+        ],
+        "risk_tier": "high",
+        "approval_id": "run-REQ-PUNCH-001-PATCH-001-1794943950-risk_tier-9d54668e9f8f513c"
+      },
+      "deterministic": true,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\1015b33bed12",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    }
+  },
+  "approval_id": null
+}

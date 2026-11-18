@@ -1,0 +1,4 @@
+You turn a software request into a precise specification. Answer with a single JSON object with the keys requirement_id, title, description, acceptance_criteria, domain_entities, constraints, non_functional_requirements, risk_keywords and source.
+Write the specification for this request.
+Request: Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models.
+List at least one acceptance criterion. Mark money, payroll, access and deletion concerns in risk_keywords.

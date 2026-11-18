@@ -1,0 +1,67 @@
+{
+  "approval_id": "5641c3fa2f8a-approval_spec-6b0d8af0c7238d5c",
+  "run_id": "5641c3fa2f8a",
+  "gate_id": "approval_spec",
+  "stage": 1,
+  "artifact_type": "requirements",
+  "artifact": {
+    "requirement_id": "REQ-001",
+    "title": "Geofenced Time‑Punch Validation Microservice Function",
+    "description": "Provide a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> ValidationResult` that verifies the punch is within 100 m of the office location (12.9716, 77.5946) and between 06:00 and 22:00 local office time. The function returns a JSON object `{ \"valid\": bool, \"reason\": str }`. The implementation must use strictly typed Pydantic models for inputs and outputs.",
+    "acceptance_criteria": [
+      "The function returns `valid: true` with reason \"Punch accepted\" when the supplied coordinates are within 100 m of (12.9716, 77.5946) and the timestamp is between 06:00 and 22:00 office local time.",
+      "The function returns `valid: false` with an appropriate reason when the location is outside the 100 m radius.",
+      "The function returns `valid: false` with an appropriate reason when the timestamp is outside the allowed window."
+    ],
+    "domain_entities": [
+      "Employee",
+      "Punch"
+    ],
+    "entities": [
+      {
+        "name": "Employee",
+        "description": "Represents an employee who can punch in/out.",
+        "attributes": [
+          "employee_id",
+          "name"
+        ]
+      },
+      {
+        "name": "Punch",
+        "description": "A time‑punch record submitted by an employee.",
+        "attributes": [
+          "employee_id",
+          "timestamp",
+          "latitude",
+          "longitude"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Employee",
+        "target": "Punch",
+        "kind": "references",
+        "description": "An employee creates a punch record."
+      }
+    ],
+    "task_type": "feature",
+    "constraints": [],
+    "non_functional_requirements": [],
+    "risk_keywords": [
+      "money",
+      "payroll",
+      "access",
+      "deletion"
+    ],
+    "declared_permissions": [],
+    "source": null
+  },
+  "tenant_id": "tenant-a",
+  "requested_at": "2026-11-17T20:05:55.978158+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T20:06:10.386946+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "6b0d8af0c7238d5c0b96ee36573a5f6ef306d1f9aa412ce95dd46d4f4eb8c46b"
+}

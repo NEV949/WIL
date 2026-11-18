@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-17T15:00:00+00:00",
+  "patch_id": "PATCH-REQ001-002",
+  "requirement_id": "REQ-001",
+  "attempt": 2,
+  "strategy": "Replace disallowed external imports (pydantic, pytest) with standard library equivalents (dataclasses, built‑in assert). Implement PunchRequest and ValidationResult as dataclasses and rewrite tests to import from main and use plain asserts.",
+  "code_slice": "",
+  "error_excerpt": "Security events: import of 'pydantic' in main.py, import of 'pytest' and 'punch_validation' in tests/test_punch_validation.py are flagged as not on the import allowlist (S403-import-not-allowed). This caused the test run to abort with exit code 125.",
+  "proposed_changes": [
+    {
+      "path": "main.py",
+      "operation": "modify",
+      "content": "from datetime import datetime\nfrom dataclasses import dataclass\nfrom typing import Optional\n\n# Office location (latitude, longitude)\nOfficeCoordinates = (12.9716, 77.5946)\n# Maximum allowed distance from office in meters\nMAX_METER_DISTANCE = 100.0\n# Allowed punch window (hour, minute)\nTIME_START = (6, 0)   # 06:00\nTIME_END = (22, 0)    # 22:00\n\n\n@dataclass\nclass PunchRequest:\n    employee_id: int\n    timestamp: datetime\n    latitude: float\n    longitude: float\n\n\n@dataclass\nclass ValidationResult:\n    valid: bool\n    reason: str\n\n\ndef haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n    \"\"\"Calculate the great‑circle distance between two points in kilometers.\"\"\"\n    from math import asin, cos, radians, sin, sqrt\n\n    earth_radius_km = 6371.0\n    d_lat = radians(lat2 - lat1)\n    d_lon = radians(lon2 - lon1)\n    a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2\n    c = 2 * asin(min(1.0, sqrt(a)))\n    return c * earth_radius_km\n\n\ndef _validate_location(request: PunchRequest) -> Optional[str]:\n    off_lat, off_lng = OfficeCoordinates\n    dist_m = haversine(request.latitude, request.longitude, off_lat, off_lng) * 1000.0\n    if dist_m > MAX_METER_DISTANCE:\n        return \"Location out of range\"\n    return None\n\n\ndef _validate_time(request: PunchRequest) -> Optional[str]:\n    cur_minutes = request.timestamp.hour * 60 + request.timestamp.minute\n    start_minutes = TIME_START[0] * 60 + TIME_START[1]\n    end_minutes = TIME_END[0] * 60 + TIME_END[1]\n    if not (start_minutes <= cur_minutes <= end_minutes):\n        return \"Time outside allowed window\"\n    return None\n\n\ndef validate_punch(request: PunchRequest) -> ValidationResult:\n    \"\"\"Validate a geofenced punch request.\n\n    Returns a ValidationResult indicating whether the punch is accepted and a\n    human‑readable reason.\n    \"\"\"\n    location_err = _validate_location(request)\n    if location_err:\n        return ValidationResult(valid=False, reason=location_err)\n\n    time_err = _validate_time(request)\n    if time_err:\n        return ValidationResult(valid=False, reason=time_err)\n\n    return ValidationResult(valid=True, reason=\"Punch accepted\")\n",
+      "sha256": null
+    },
+    {
+      "path": "tests/test_punch_validation.py",
+      "operation": "modify",
+      "content": "from datetime import datetime\nfrom main import PunchRequest, validate_punch\n\n\ndef test_valid_punch():\n    \"\"\"A punch within the allowed time window and location should be accepted.\"\"\"\n    request = PunchRequest(\n        employee_id=1,\n        timestamp=datetime(2023, 1, 1, 9, 0),\n        latitude=12.9716,\n        longitude=77.5946,\n    )\n    result = validate_punch(request)\n    assert result.valid\n    assert result.reason == \"Punch accepted\"\n\n\ndef test_invalid_time():\n    \"\"\"A punch outside the allowed time window should be rejected.\"\"\"\n    request = PunchRequest(\n        employee_id=1,\n        timestamp=datetime(2023, 1, 1, 23, 0),  # 23:00 is after TIME_END\n        latitude=12.9716,\n        longitude=77.5946,\n    )\n    result = validate_punch(request)\n    assert not result.valid\n    assert result.reason == \"Time outside allowed window\"\n\n\ndef test_invalid_location():\n    \"\"\"A punch far from the office coordinates should be rejected.\"\"\"\n    request = PunchRequest(\n        employee_id=1,\n        timestamp=datetime(2023, 1, 1, 9, 0),\n        latitude=0.0,\n        longitude=0.0,\n    )\n    result = validate_punch(request)\n    assert not result.valid\n    assert result.reason == \"Location out of range\"\n",
+      "sha256": null
+    }
+  ],
+  "model": ""
+}

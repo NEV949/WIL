@@ -1,0 +1,54 @@
+{
+  "approval_id": "15211c90bd69-approval_tests-3caebb8fede4648f",
+  "run_id": "15211c90bd69",
+  "gate_id": "approval_tests",
+  "stage": 2,
+  "artifact_type": "tests",
+  "artifact": {
+    "schema_version": "1.0",
+    "created_at": "2026-11-17T13:45:00Z",
+    "suite_id": "suite_001",
+    "requirement_id": "REQ-001",
+    "tests": [
+      {
+        "test_id": "test_001_valid_punch",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "punch_validation",
+        "test_code": "import datetime\nimport pytest\nfrom punch_validation import validate_punch\n\ndef test_valid_punch():\n    result = validate_punch(\n        employee_id=1,\n        timestamp=datetime.datetime(2023, 1, 1, 9, 30),\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result[\"valid\"] is True\n    assert result[\"reason\"] == \"Punch accepted\"\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_002_location_out_of_range",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "punch_validation",
+        "test_code": "import datetime\nimport pytest\nfrom punch_validation import validate_punch\n\ndef test_location_out_of_range():\n    # Approx. 200 meters north of the office coordinates\n    result = validate_punch(\n        employee_id=2,\n        timestamp=datetime.datetime(2023, 1, 1, 12, 0),\n        lat=12.9735,\n        lng=77.5946,\n    )\n    assert result[\"valid\"] is False\n    assert result[\"reason\"] == \"Location out of range\"\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_003_time_outside_window",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "punch_validation",
+        "test_code": "import datetime\nimport pytest\nfrom punch_validation import validate_punch\n\ndef test_time_outside_window():\n    result = validate_punch(\n        employee_id=3,\n        timestamp=datetime.datetime(2023, 1, 1, 5, 45),\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result[\"valid\"] is False\n    assert result[\"reason\"] == \"Time outside allowed window\"\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      }
+    ]
+  },
+  "requested_at": "2026-11-17T14:40:15.450000+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T14:41:06.965618+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "3caebb8fede4648f6de96a27edea62715836973e7ac5d680692e15fa54db6a5b"
+}

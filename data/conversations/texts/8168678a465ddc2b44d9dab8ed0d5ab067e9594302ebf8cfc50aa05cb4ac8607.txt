@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-17T13:55:00Z",
+  "patch_id": "patch-001",
+  "requirement_id": "REQ-001",
+  "attempt": 2,
+  "strategy": "Remove disallowed imports (pydantic, pytest, mymodule) and replace Pydantic models with plain validation logic.",
+  "code_slice": "",
+  "error_excerpt": "ImportNotAllowed errors for pydantic, pytest, and mymodule caused the test runner to exit with code 125.",
+  "proposed_changes": [
+    {
+      "path": "punch_validator.py",
+      "operation": "modify",
+      "content": "from datetime import datetime, time\nfrom typing import Any, Dict\n\n# Configuration\nOFFICE_LAT: float = 12.9716\nOFFICE_LNG: float = 77.5946\nGEOFENCE_RADIUS_M: float = 100.0  # meters\nALLOWED_START: time = time(6, 0)   # 06:00\nALLOWED_END: time = time(22, 0)    # 22:00\n\ndef _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"Calculate great‑circle distance between two points (in metres).\"\"\"\n    import math\n\n    r = 6371000.0  # Earth radius in metres\n    phi1 = math.radians(lat1)\n    phi2 = math.radians(lat2)\n    dphi = math.radians(lat2 - lat1)\n    dlambda = math.radians(lng2 - lng1)\n\n    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))\n    return r * c\n\ndef _is_within_geofence(lat: float, lng: float) -> bool:\n    return _haversine_m(lat, lng, OFFICE_LAT, OFFICE_LNG) <= GEOFENCE_RADIUS_M\n\ndef _is_within_allowed_time(ts: datetime) -> bool:\n    local_time = ts.time()\n    return ALLOWED_START <= local_time < ALLOWED_END\n\ndef validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> Dict[str, Any]:\n    \"\"\"Validate a punch against location and time constraints.\n\n    Returns a dictionary containing:\n        - \"valid\" (bool): True if the punch meets all criteria.\n        - \"reason\" (str): Explanation.\n    \"\"\"\n    if timestamp.tzinfo is None:\n        raise ValueError(\"timestamp must be timezone‑aware\")\n\n    if not _is_within_geofence(lat, lng):\n        return {\"valid\": False, \"reason\": \"Location out of range\"}\n\n    if not _is_within_allowed_time(timestamp):\n        return {\"valid\": False, \"reason\": \"Time out of allowed range\"}\n\n    return {\"valid\": True, \"reason\": \"Punch accepted\"}\n",
+      "sha256": null
+    },
+    {
+      "path": "tests/test_punch_validator.py",
+      "operation": "modify",
+      "content": "from datetime import datetime, timezone, time\nimport math\n\nfrom punch_validator import (\n    OFFICE_LAT,\n    OFFICE_LNG,\n    GEOFENCE_RADIUS_M,\n    ALLOWED_START,\n    ALLOWED_END,\n    validate_punch,\n    _haversine_m,\n)\n\ndef _office_location() -> tuple[float, float]:\n    return OFFICE_LAT, OFFICE_LNG\n\ndef _offset_location(lat: float, lng: float, north_m: float, east_m: float) -> tuple[float, float]:\n    \"\"\"Return a new lat/lng offset by the given metres north and east.\n    Approximation works for small distances.\n    \"\"\"\n    meters_per_deg_lat = 111_320.0\n    meters_per_deg_lng = 111_320.0 * math.cos(math.radians(lat))\n    new_lat = lat + north_m / meters_per_deg_lat\n    new_lng = lng + east_m / meters_per_deg_lng\n    return new_lat, new_lng\n\ndef test_punch_accepted():\n    ts = datetime(2023, 5, 17, 9, 15, tzinfo=timezone.utc)\n    result = validate_punch(\n        employee_id=1,\n        timestamp=ts,\n        lat=OFFICE_LAT,\n        lng=OFFICE_LNG,\n    )\n    assert result == {\"valid\": True, \"reason\": \"Punch accepted\"}\n\ndef test_location_out_of_range():\n    ts =

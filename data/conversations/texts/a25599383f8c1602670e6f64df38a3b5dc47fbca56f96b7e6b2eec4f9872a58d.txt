@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-18T12:00:00Z",
+  "strategy": "",
+  "code_slice": "",
+  "error_excerpt": "",
+  "model": "",
+  "proposed_changes": [
+    {
+      "path": "tests/test_service.py",
+      "operation": "modify",
+      "content": "import pytest\nfrom datetime import datetime, timezone\nfrom punch_validation.models import PunchEvent, ValidationResult\nfrom punch_validation.service import validate_punch\n\ndef test_punch_outside_hours():\n    # Punch within radius but at 23:30 local time (18:00 UTC) which is outside allowed window\n    event = PunchEvent(\n        employee_id=\"emp125\",\n        timestamp=datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc),  # 23:30 local\n        lat=12.9716,\n        lng=77.5946,\n    )\n    result: ValidationResult = validate_punch(event)\n    assert result.valid is False\n    assert result.reason is not None\n    assert \"outside allowed window\" in result.reason\n"
+    ,
+      "sha256": null
+    },
+    {
+      "path": "tests/test_models.py",
+      "operation": "modify",
+      "content": "import pytest\nfrom datetime import datetime, timezone\nfrom pydantic import ValidationError\nfrom punch_validation.models import PunchEvent\n\ndef test_strict_input_validation():\n    # employee_id must be a string; passing an int should raise ValidationError due to strict mode\n    with pytest.raises(ValidationError):\n        PunchEvent(\n            employee_id=12345,\n            timestamp=datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc),\n            lat=12.9716,\n            lng=77.5946,\n        )\n"
+    ,
+      "sha256": null
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "approval_id": "ece1f3eb12cc-approval_spec-2eeff089772be6f2",
+  "run_id": "ece1f3eb12cc",
+  "gate_id": "approval_spec",
+  "stage": 1,
+  "artifact_type": "requirements",
+  "artifact": {
+    "requirement_id": "REQ-PUNCH-001",
+    "title": "Geofence and Working Hours Validation for Employee Time Punch",
+    "description": "Implement a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that verifies whether an employee time-punch event is physically located within 100 meters of the designated office at coordinates (12.9716, 77.5946) and occurs between 06:00 and 22:00 local office time (Asia/Kolkata). The function must validate inputs and outputs using strictly typed Pydantic models and return a model containing 'valid' (boolean) and 'reason' (string or null).",
+    "acceptance_criteria": [
+      "The function returns valid=True with reason=None (or empty string/success message) when a punch is within 100 meters of (12.9716, 77.5946) and timestamp evaluates to local office time between 06:00 and 22:00 inclusive.",
+      "The function returns valid=False with an appropriate descriptive reason if the punch location exceeds 100 meters from the office coordinates.",
+      "The function returns valid=False with an appropriate descriptive reason if the punch occurs outside the local hours of 06:00 to 22:00.",
+      "Input parameters and output results are modeled using strictly typed Pydantic v2 schemas.",
+      "Geodesic or Haversine distance calculations are used to accurately compute the distance in meters relative to (12.9716, 77.5946)."
+    ],
+    "domain_entities": [
+      "PunchEvent",
+      "ValidationResult",
+      "OfficeLocation"
+    ],
+    "entities": [
+      {
+        "name": "PunchEvent",
+        "description": "Represents an employee time-punch attempt with spatial and temporal attributes.",
+        "attributes": [
+          "employee_id: str",
+          "timestamp: datetime",
+          "lat: float",
+          "lng: float"
+        ]
+      },
+      {
+        "name": "ValidationResult",
+        "description": "Validation response indicating whether the punch is accepted and why.",
+        "attributes": [
+          "valid: bool",
+          "reason: Optional[str]"
+        ]
+      },
+      {
+        "name": "OfficeLocation",
+        "description": "Reference office location and operating hours configuration.",
+        "attributes": [
+          "latitude: float",
+          "longitude: float",
+          "radius_meters: float",
+          "timezone: str",
+          "start_time: time",
+          "end_time: time"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "PunchEvent",
+        "target": "OfficeLocation",
+        "kind": "validated_against",
+        "description": "PunchEvent location and timestamp are verified against OfficeLocation geofence and operating hours."
+      },
+      {
+        "source": "PunchEvent",
+        "target": "ValidationResult",
+        "kind": "produces",
+        "description": "Validation process evaluates PunchEvent to produce a ValidationResult."
+      }
+    ],
+    "task_type": "feature",
+    "constraints": [
+      "Office coordinate is fixed at lat 12.9716, lng 77.5946.",
+      "Geofence threshold is strictly 100 meters.",
+      "Office local time zone is Asia/Kolkata (UTC+5:30).",
+      "Allowed time range is 06:00 to 22:00 local time.",
+      "Strict type checking and Pydantic validation must be enforced on all input and output objects."
+    ],
+    "non_functional_requirements": [
+      "Validation execution must complete with sub-millisecond computation latency per request.",
+      "Distance calculation algorithm must handle Earth curvature accurately (e.g., Haversine formula)."
+    ],
+    "risk_keywords": [
+      "payroll",
+      "access",
+      "money",
+      "deletion"
+    ],
+    "declared_permissions": [],
+    "source": null
+  },
+  "tenant_id": "tenant-a",
+  "requested_at": "2026-11-18T02:13:11.024273+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-18T02:13:27.197364+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "2eeff089772be6f25cd71591525973f8a6937c16df599424781ec96212642d6e"
+}

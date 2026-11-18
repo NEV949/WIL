@@ -1,0 +1,64 @@
+{
+  "requirement_id": "REQ-001",
+  "title": "Validate employee punch location and time",
+  "description": "Implement a Python microservice function `validate_punch(employee_id, timestamp, lat, lng)` that verifies the punch is within 100 meters of the office located at latitude 12.9716 and longitude 77.5946, and that the timestamp falls between 06:00 and 22:00 local office time. The function should return a JSON object `{ \"valid\": bool, \"reason\": string }`. Use strictly typed Pydantic models for inputs and outputs.",
+  "acceptance_criteria": [
+    "Given a punch at (12.9716, 77.5946) at 08:00 local time, the function returns valid=true.",
+    "Given a punch 200 meters away from the office, the function returns valid=false with an appropriate reason.",
+    "Given a punch at 23:00 local time, the function returns valid=false with an appropriate reason."
+  ],
+  "risk_keywords": [
+    "money",
+    "payroll",
+    "access",
+    "deletion"
+  ],
+  "domain_entities": [
+    "Employee",
+    "Punch",
+    "Office"
+  ],
+  "entities": [
+    {
+      "name": "Employee",
+      "description": "Represents an employee who can punch in/out.",
+      "attributes": [
+        "employee_id",
+        "name"
+      ]
+    },
+    {
+      "name": "Punch",
+      "description": "Record of a punch attempt.",
+      "attributes": [
+        "employee_id",
+        "timestamp",
+        "latitude",
+        "longitude"
+      ]
+    },
+    {
+      "name": "Office",
+      "description": "Office location used for validation.",
+      "attributes": [
+        "latitude",
+        "longitude",
+        "radius_meters"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "Punch",
+      "target": "Employee",
+      "kind": "references",
+      "description": "Punch references the employee who made it."
+    },
+    {
+      "source": "Punch",
+      "target": "Office",
+      "kind": "references",
+      "description": "Punch is validated against the office location."
+    }
+  ]
+}

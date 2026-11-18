@@ -1,0 +1,101 @@
+You implement an approved specification. Return one complete CodePatch JSON object matching the generated Pydantic output contract. File paths must be relative and must not traverse upwards. Every function, parameter, and return value must be strictly typed; parameterize all generic types such as dict, list, and set so the complete output passes mypy --strict.
+Allowed enum/literal values from the output schema: $defs.FileChange.properties.operation: ["create", "modify", "delete"]
+Output contract generated from the Pydantic schema. Return exactly one JSON object matching this complete schema, including required fields, types, descriptions, nesting, defaults, and allowed values. Do not add, rename, or move fields.
+{
+  "$defs": {
+    "FileChange": {
+      "additionalProperties": false,
+      "description": "A single file mutation carried by a patch.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "operation": {
+          "enum": [
+            "create",
+            "modify",
+            "delete"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "content": {
+          "default": "",
+          "title": "Content",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        }
+      },
+      "required": [
+        "path",
+        "operation"
+      ],
+      "title": "FileChange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Code produced by the coder agent.",
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "patch_id": {
+      "title": "Patch Id",
+      "type": "string"
+    },
+    "requirement_id": {
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileChange"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "patch_id",
+    "requirement_id"
+  ],
+  "title": "CodePatch",
+  "type": "object"
+}
+Concrete valid JSON example generated from this schema:
+{
+  "schema_version": "1.0",
+  "patch_id": "example",
+  "requirement_id": "example",
+  "summary": ""
+}
+Implement this specification.
+Specification: {"requirement_id": "REQ-001", "title": "Geofenced Time‑Punch Validation Microservice Function", "description": "Provide a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> ValidationResult` that verifies the punch is within 100 m of the office location (12.9716, 77.5946) and between 06:00 and 22:00 local office time. The function returns a JSON object `{ \"valid\": bool, \"reason\": str }`. The implementation must use strictly typed Pydantic models for inputs and outputs.", "acceptance_criteria": ["The function returns `valid: true` with reason \"Punch accepted\" when the supplied coordinates are within 100 m of (12.9716, 77.5946) and the timestamp is between 06:00 and 22:00 office local time.", "The function returns `valid: false` with an appropriate reason when the location is outside the 100 m radius.", "The function returns `valid: false` with an appropriate reason when the timestamp is outside the allowed window."], "domain_entities": ["Employee", "Punch"], "entities": [{"name": "Employee", "description": "Represents an employee who can punch in/out.", "attributes": ["employee_id", "name"]}, {"name": "Punch", "description": "A time‑punch record submitted by an employee.", "attributes": ["employee_id", "timestamp", "latitude", "longitude"]}], "relationships": [{"source": "Employee", "target": "Punch", "kind": "references", "description": "An employee creates a punch record."}], "task_type": "feature", "constraints": [], "non_functional_requirements": [], "risk_keywords": ["money", "payroll", "access", "deletion"], "declared_permissions": [], "source": null}
+QUALITY REPAIR: correct the supplied mypy and coverage diagnostics while preserving approved functional requirements and schemas.
+Quality findings: {"mypy_command": "mypy --strict", "mypy_errors": ["microservice.py:33: error: Missing type arguments for generic type \"dict\" [type-arg]", "service.py:33: error: Missing type arguments for generic type \"dict\" [type-arg]"], "coverage_report": "88% TOTAL, but microservice was never imported", "coverage_warning": "The only generated test imports service; the CodePatch source is microservice.py", "required_action": "Fix strict typing and preserve the approved behavior; do not weaken the coverage target or gates."}
+Latest implementation and tests: {"microservice.py": "from datetime import datetime, time\nfrom pydantic import BaseModel, Field\nfrom typing import Union\nimport math\n\nOFFICE_LAT = 12.9716\nOFFICE_LNG = 77.5946\nRADIUS_METERS = 100.0\nMIN_TIME = time(6, 0, 0)\nMAX_TIME = time(22, 0, 0)\n\nclass ValidationResult(BaseModel):\n    valid: bool\n    reason: str\n\ndef haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"\n    Calculate the great-circle distance between two points on the Earth's surface in meters.\n    \"\"\"\n    R = 6371000  # Earth's radius in meters\n\n    lat1_rad = math.radians(lat1)\n    lat2_rad = math.radians(lat2)\n    dlat = lat2_rad - lat1_rad\n    dlng = math.radians(lng2) - math.radians(lng1)\n\n    a = (math.sin(dlat / 2) ** 2 +\n         math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2)\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))\n\n    return R * c\n\ndef validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict:\n    \"\"\"\n    Validate a time punch based on location and time.\n    \"\"\"\n    # 1. Location validation\n    distance = haversine(OFFICE_LAT, OFFICE_LNG, lat, lng)\n    if distance > RADIUS_METERS:\n        result = ValidationResult(valid=False, reason=\"Location is outside the allowed geofence\")\n        return result.model_dump()\n\n    # 2. Time validation\n    current_time = timestamp.time()\n    if current_time < MIN_TIME or current_time > MAX_TIME:\n        result = ValidationResult(valid=False, reason=\"Timestamp is outside the allowed window\")\n        return result.model_dump()\n\n    # 3. Success\n    result = ValidationResult(valid=True, reason=\"Punch accepted\")\n    return result.model_dump()\n", "service.py": "from datetime import datetime, time\nfrom pydantic import BaseModel, Field\nfrom typing import Union\nimport math\n\nOFFICE_LAT = 12.9716\nOFFICE_LNG = 77.5946\nRADIUS_METERS = 100.0\nMIN_TIME = time(6, 0, 0)\nMAX_TIME = time(22, 0, 0)\n\nclass ValidationResult(BaseModel):\n    valid: bool\n    reason: str\n\ndef haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"\n    Calculate the great-circle distance between two points on the Earth's surface in meters.\n    \"\"\"\n    R = 6371000  # Earth's radius in meters\n\n    lat1_rad = math.radians(lat1)\n    lat2_rad = math.radians(lat2)\n    dlat = lat2_rad - lat1_rad\n    dlng = math.radians(lng2) - math.radians(lng1)\n\n    a = (math.sin(dlat / 2) ** 2 +\n         math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2)\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))\n\n    return R * c\n\ndef validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict:\n    \"\"\"\n    Validate a time punch based on location and time.\n    \"\"\"\n    # 1. Location validation\n    distance = haversine(OFFICE_LAT, OFFICE_LNG, lat, lng)\n    if distance > RADIUS_METERS:\n        result = ValidationResult(valid=False, reason=\"Location is outside the allowed geofence\")\n        return result.model_dump()\n\n    # 2. Time validation\n    current_time = timestamp.time()\n    if current_time < MIN_TIME or current_time > MAX_TIME:\n        result = ValidationResult(valid=False, reason=\"Timestamp is outside the allowed window\")\n        return result.model_dump()\n\n    # 3. Success\n    result = ValidationResult(valid=True, reason=\"Punch accepted\")\n    return result.model_dump()\n", "_oracle_runner.py": "\"\"\"Suite runner for the sandbox.\n\nThe script installs a Python audit hook, runs pytest and reports every\noperation the suite tried to make that the container is supposed to forbid.\nIt is copied into the sandbox workspace and executed with the interpreter of\nthe image. It must not import anything from the engine.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport sys\nfrom types import FrameType\n\nMARKER = \"=== ORACLE_SECURITY_EVENTS ===\"\n\nWORKSPACE = \"/workspace\"\nRUNNER = __file__\nMAX_EVENTS = 500\n\nWRITABLE = (\"/scratch\", \"/tmp\")\nSENSITIVE_PATHS = (\n    \"/etc/passwd\",\n    \"/etc/shadow\",\n    \"/etc/hosts\",\n    \"/etc/sudoers\",\n    \"/proc/self/environ\",\n    \"/proc/self/maps\",\n    \"/root/\",\n    \"/home/\",\n    \"/run/secrets/\",\n    \"/var/run/\",\n)\nWRITE_FLAGS = (\"w\", \"a\", \"x\", \"+\")\n\nevents: list[dict[str, str]] = []\n_inspecting = False\n\n\ndef _record(category: str, detail: str) -> None:\n    if len(events) >= MAX_EVENTS:\n        return\n    events.append({\"category\": category, \"detail\": detail[:200]})\n\n\ndef _in_workspace(filename: str) -> bool:\n    return filename.startswith(WORKSPACE) and not filename.startswith(RUNNER)\n\n\ndef _caller_frame() -> FrameType | None:\n    \"\"\"The frame of the code that triggered the audit event.\"\"\"\n    try:\n        return sys._getframe(2)\n    except ValueError:\n        return None\n\n\ndef _generated_code_involved(frame: FrameType) -> bool:\n    \"\"\"Whether the generated code is on the stack that caused the event.\n\n    The test framework compiles and executes code of its own, which would\n    otherwise be reported as the generated code trying to escape.\n    \"\"\"\n    current: FrameType | None = frame\n    while current is not None:\n        if _in_workspace(current.f_code.co_filename):\n            return True\n        current = current.f_back\n    return False\n\n\ndef _hook(event: str, args: tuple[object, ...]) -> None:\n    global _inspecting\n    if _inspecting:\n        return\n    _inspecting = True\n    try:\n        frame = _caller_frame()\n        if frame is None:\n            return\n        _inspect(event, args, frame)\n    except Exception:\n        return\n    finally:\n        _inspecting = False\n\n\ndef _inspect(event: str, args: tuple[object, ...], frame: FrameType) -> None:\n    if event in (\"exec\", \"compile\"):\n        if not _in_workspace(frame.f_code.co_filename):\n            return\n    elif not _generated_code_involved(frame):\n        return\n    if event == \"open\":\n        path = args[0] if args else \"\"\n        if not isinstance(path, str):\n            return\n        mode = args[1] if len(args) > 1 and isinstance(args[1], str) else \"r\"\n        if any(flag in mode for flag in WRITE_FLAGS) and not path.startswith(WRITABLE):\n            _record(\"file_write_outside_scratch\", path)\n            return\n        if path.startswith(SENSITIVE_PATHS):\n            _record(\"sensitive_file_read\", path)\n        return\n    if event in (\"socket.connect\", \"socket.getaddrinfo\", \"socket.gethostbyname\"):\n        _record(\"network\", str(args[0] if args else \"\"))\n        return\n    if event.startswith(\"subprocess.\") or event in (\n        \"os.system\",\n        \"os.exec\",\n        \"os.posix_spawn\",\n        \"os.fork\",\n        \"os.spawn\",\n    ):\n        _record(\"process\", event)\n        return\n    if event in (\n        \"os.remove\",\n        \"os.rename\",\n        \"os.replace\",\n        \"os.rmdir\",\n        \"os.mkdir\",\n        \"os.chmod\",\n        \"os.chown\",\n        \"os.truncate\",\n        \"os.link\",\n        \"os.symlink\",\n    ):\n        _record(\"file_write\", str(args[0] if args else \"\"))\n        return\n    if event in (\"exec\", \"compile\"):\n        _record(\"dynamic_exec\", event)\n        return\n    if event == \"ctypes.dlopen\":\n        _record(\"native_code\", str(args[0] if args else \"\"))\n\n\ndef main() -> int:\n    \"\"\"Run the suite and print the collected events.\"\"\"\n    sys.addaudithook(_hook)\n    import pytest\n\n    code = int(pytest.main(sys.argv[1:]))\n    sys.stdout.write(f\"{MARKER}\\n\")\n    sys.stdout.write(json.dumps(events))\n    sys.stdout.write(\"\\n\")\n    return code\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"}
+Return the complete file contents for every file you touch.

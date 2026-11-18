@@ -1,0 +1,16 @@
+{
+  "requirement_id": "REQ-001",
+  "title": "Geofenced Time‑Punch Validation Microservice Function",
+  "description": "Implement a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict` that validates that the punch is within 100 meters of the office location (latitude 12.9716, longitude 77.5946) and that the timestamp is between 06:00 and 22:00 local office time. The function must return a dictionary with keys `valid` (bool) and `reason` (string). The implementation must use strictly typed Pydantic models for input and output.",
+  "acceptance_criteria": [
+    "When a punch is recorded within 100 m of the office and the timestamp is 09:15 local time, the function returns `{\"valid\": true, \"reason\": \"Punch accepted\"}`.",
+    "When a punch is recorded outside 100 m of the office, the function returns `{\"valid\": false, \"reason\": \"Location out of range\"}`.",
+    "When a punch is recorded within range but the timestamp is outside the 06:00‑22:00 window, the function returns `{\"valid\": false, \"reason\": \"Time out of allowed range\"}`."
+  ],
+  "risk_keywords": [
+    "money",
+    "payroll",
+    "access",
+    "deletion"
+  ]
+}

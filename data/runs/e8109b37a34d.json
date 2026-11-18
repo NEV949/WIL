@@ -1,0 +1,51 @@
+{
+  "run_id": "e8109b37a34d",
+  "sop_id": "sop_lightweight",
+  "tenant_id": "tenant-a",
+  "request": "Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models.",
+  "status": "failed",
+  "step_index": 0,
+  "suspended_step": null,
+  "outputs": {
+    "requirements": {
+      "requirement_id": "REQ-ATT-001",
+      "title": "Geofenced Time-Punch Validation Microservice Function",
+      "description": "Implement a Python microservice function `validate_punch(employee_id, timestamp, lat, lng)` that verifies whether an employee's attendance punch occurs within 100 meters of the office location at (12.9716, 77.5946) and falls between 06:00 and 22:00 in the office's local timezone (Asia/Kolkata). The function inputs and outputs must be enforced using strictly typed Pydantic models, returning whether the punch is valid and the associated reason.",
+      "acceptance_criteria": [
+        "Given a punch with coordinates within 100 meters of (12.9716, 77.5946) and a timestamp between 06:00:00 and 22:00:00 local time, the function returns `valid=True` and `reason=None`.",
+        "Given a punch with coordinates exceeding 100 meters from the office location, the function returns `valid=False` and a descriptive reason indicating location out of bounds.",
+        "Given a punch timestamp occurring before 06:00:00 or after 22:00:00 local office time, the function returns `valid=False` and a descriptive reason indicating outside operating hours.",
+        "Given inputs that violate data types or bounds (e.g., latitude outside [-90, 90], longitude outside [-180, 180]), the function raises a Pydantic `ValidationError`.",
+        "The return value must strictly adhere to a Pydantic response model containing `valid: bool` and `reason: Optional[str]`."
+      ],
+      "domain_entities": [
+        "Employee",
+        "TimePunch",
+        "GeoCoordinates",
+        "ValidationResult"
+      ],
+      "entities": [],
+      "relationships": [],
+      "task_type": "feature",
+      "constraints": [
+        "Must use strictly typed Pydantic models for request parsing/validation and response generation.",
+        "Office fixed coordinates are latitude 12.9716, longitude 77.5946.",
+        "Distance calculation must utilize a standard geodesic or Haversine formula with a threshold of 100.0 meters.",
+        "Time evaluation must be localized to the office timezone (Asia/Kolkata / UTC+05:30) regardless of the server's system time."
+      ],
+      "non_functional_requirements": [
+        "Validation computation latency must be under 50 milliseconds.",
+        "High mathematical precision for geospatial calculations (error margin < 1 meter)."
+      ],
+      "risk_keywords": [
+        "money",
+        "payroll",
+        "access",
+        "deletion"
+      ],
+      "declared_permissions": [],
+      "source": "Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models."
+    }
+  },
+  "approval_id": null
+}

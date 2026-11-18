@@ -1,0 +1,17 @@
+```json
+{
+  "schema_version": "1.0",
+  "created_at": "2025-07-18T00:00:00+00:00",
+  "patch_id": "PATCH-REQ001-001",
+  "requirement_id": "REQ-001",
+  "summary": "Implements geofenced time-punch validation using Pydantic models.",
+  "files": [
+    {
+      "path": "main.py",
+      "operation": "create",
+      "content": "from datetime import datetime\nfrom typing import Literal\n\nfrom pydantic import BaseModel, Field\n\n\nOfficeCoordinates = (12.9716, 77.5946)\nMAX_METER_DISTANCE = 100.0\nTIME_START = (6, 0)\nTIME_END = (22, 0)\n\n\nclass PunchRequest(BaseModel):\n    employee_id: int = Field(..., gt=0)\n    timestamp: datetime = Field(...)\n    latitude: float = Field(..., ge=-90, le=90)\n    longitude: float = Field(..., ge=-180, le=180)\n\n\nclass ValidationResult(BaseModel):\n    valid: bool\n    reason: str = Field(..., min_length=1)\n\n\ndef haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:\n    \"\"\"Calculate the great-circle distance between two points in km.\"\"\"\n    from math import asin, cos, radians, sin, sqrt\n\n    earth_radius_km = 6371.0\n    d_lat = radians(lat2 - lat1)\n    d_lon = radians(lon2 - lon1)\n    a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2\n    c = 2 * asin(min(1.0, sqrt(a)))\n    return c * earth_radius_km\n\n\ndef _validate_location(request: PunchRequest) -> str | None:\n    off_lat, off_lng = OfficeCoordinates\n    dist_m = haversine(request.latitude, request.longitude, off_lat, off_lng) * 1000.0\n    if dist_m > MAX_METER_DISTANCE:\n        return \"Location out of range\"\n    return None\n\n\ndef _validate_time(request: PunchRequest) -> str | None:\n    cur_hour, cur_min = (request.timestamp.hour, request.timestamp.minute)\n    start_hour, start_min = TIME_START\n    end_hour, end_min = TIME_END\n    \n    # Normalize time into minutes since midnight for robust comparison\n    cur_minutes = cur_hour * 60 + cur_min\n    start_minutes = start_hour * 60 + start_min\n    end_minutes = end_hour * 60 + end_min\n    \n    if not (start_minutes <= cur_minutes <= end_minutes):\n        return \"Time outside allowed window\"\n    return None\n\n\ndef validate_punch(request: PunchRequest) -> ValidationResult:\n    \"\"\"Validate a geofenced punch request.\"\"\"\n    location_err = _validate_location(request)\n    if location_err:\n        return ValidationResult(valid=False, reason=location_err)\n    \n    time_err = _validate_time(request)\n    if time_err:\n        return ValidationResult(valid=False, reason=time_err)\n    \n    return ValidationResult(valid=True, reason=\"Punch accepted\")\n",
+      "sha256": null
+    }
+  ]
+}
+```

@@ -1,0 +1,1 @@
+Correct both strict typing findings while preserving the approved behavior.

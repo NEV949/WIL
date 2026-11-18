@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-17T14:05:12Z",
+  "patch_id": "PATCH-REQ-001-002",
+  "requirement_id": "REQ-001",
+  "attempt": 2,
+  "strategy": "Update test file to use allowed imports and correct module path, removing disallowed pytest import.",
+  "code_slice": "import pytest\\nfrom validate_punch import validate_punch",
+  "error_excerpt": "Security findings: S403-import-not-allowed for 'pytest' and 'validate_punch' in tests/test_validate_punch.py.",
+  "proposed_changes": [
+    {
+      "path": "tests/test_validate_punch.py",
+      "operation": "modify",
+      "content": "from punch_validator import validate_punch\n\n\ndef test_valid_punch():\n    result = validate_punch(\n        employee_id=\"emp123\",\n        timestamp=\"2023-01-01T09:00:00\",\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result[\"valid\"] is True\n\n\ndef test_invalid_time():\n    result = validate_punch(\n        employee_id=\"emp123\",\n        timestamp=\"2023-01-01T05:00:00\",\n        lat=12.9716,\n        lng=77.5946,\n    )\n    assert result[\"valid\"] is False\n\n\ndef test_invalid_location():\n    result = validate_punch(\n        employee_id=\"emp123\",\n        timestamp=\"2023-01-01T09:00:00\",\n        lat=13.0,\n        lng=77.0,\n    )\n    assert result[\"valid\"] is False\n",
+      "sha256": null
+    }
+  ],
+  "model": ""
+}

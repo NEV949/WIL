@@ -1,0 +1,92 @@
+{
+  "approval_id": "1015b33bed12-approval_spec-ae008eb8b4857b6d",
+  "run_id": "1015b33bed12",
+  "gate_id": "approval_spec",
+  "stage": 1,
+  "artifact_type": "requirements",
+  "artifact": {
+    "requirement_id": "REQ-PUNCH-001",
+    "title": "Geofenced and Time-Restricted Punch Validation Microservice Function",
+    "description": "Implement a Python microservice function `validate_punch(employee_id, timestamp, lat, lng)` using strictly typed Pydantic models for inputs and outputs. The function evaluates whether an employee punch falls within 100 meters of the office location at (12.9716, 77.5946) and occurs between 06:00 and 22:00 local office time (Asia/Kolkata timezone). It returns an object indicating validity and an explanatory reason.",
+    "acceptance_criteria": [
+      "Given coordinates within 100 meters of (12.9716, 77.5946) and a timestamp between 06:00 and 22:00 local office time, `validate_punch` returns `valid=True` and `reason=None` (or a success confirmation message).",
+      "Given coordinates farther than 100 meters from the office location, `validate_punch` returns `valid=False` and a reason detailing geofence violation.",
+      "Given a timestamp outside the 06:00 to 22:00 local office time window, `validate_punch` returns `valid=False` and a reason detailing the time window violation.",
+      "Input parameters and return values are strictly validated using Pydantic models (e.g., PunchRequest and PunchValidationResult containing `valid: bool` and `reason: Optional[str]`)."
+    ],
+    "domain_entities": [
+      "PunchRequest",
+      "PunchValidationResult",
+      "OfficeLocation"
+    ],
+    "entities": [
+      {
+        "name": "PunchRequest",
+        "description": "Represents the incoming punch payload submitted by an employee.",
+        "attributes": [
+          "employee_id",
+          "timestamp",
+          "lat",
+          "lng"
+        ]
+      },
+      {
+        "name": "PunchValidationResult",
+        "description": "The result object returned by the punch validation service.",
+        "attributes": [
+          "valid",
+          "reason"
+        ]
+      },
+      {
+        "name": "OfficeLocation",
+        "description": "Reference office location and geofence parameters.",
+        "attributes": [
+          "latitude",
+          "longitude",
+          "geofence_radius_meters",
+          "timezone"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "PunchRequest",
+        "target": "PunchValidationResult",
+        "kind": "evaluates_to",
+        "description": "A PunchRequest is evaluated by validate_punch to produce a PunchValidationResult."
+      },
+      {
+        "source": "PunchRequest",
+        "target": "OfficeLocation",
+        "kind": "validated_against",
+        "description": "A PunchRequest is validated against the OfficeLocation coordinates and timezone."
+      }
+    ],
+    "task_type": "feature",
+    "constraints": [
+      "Geodesic distance calculation must accurately measure the 100-meter radius using the Haversine or geodesic formula.",
+      "Office coordinates are fixed at latitude 12.9716 and longitude 77.5946 (Asia/Kolkata).",
+      "Allowed punch window is strictly between 06:00:00 and 22:00:00 local office time.",
+      "Must use strictly typed Pydantic models for data validation and response serialization."
+    ],
+    "non_functional_requirements": [
+      "Sub-millisecond validation computation time.",
+      "Deterministic geofence calculation precision."
+    ],
+    "risk_keywords": [
+      "payroll",
+      "money",
+      "access",
+      "deletion"
+    ],
+    "declared_permissions": [],
+    "source": null
+  },
+  "requested_at": "2026-11-17T19:29:49.717939+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T19:29:56.902743+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "ae008eb8b4857b6d885f922987e32107f06346a669ffa3656c982c73d4d61ed6"
+}

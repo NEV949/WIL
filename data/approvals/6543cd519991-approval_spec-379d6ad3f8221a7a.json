@@ -1,0 +1,36 @@
+{
+  "approval_id": "6543cd519991-approval_spec-379d6ad3f8221a7a",
+  "run_id": "6543cd519991",
+  "gate_id": "approval_spec",
+  "stage": 1,
+  "artifact_type": "requirements",
+  "artifact": {
+    "requirement_id": "REQ-1",
+    "title": "Add overtime calculation",
+    "description": "Calculate overtime for monthly staff from their timesheet.",
+    "acceptance_criteria": [
+      "Overtime is paid at 1.5x the hourly rate.",
+      "A timesheet without overtime produces no overtime pay."
+    ],
+    "domain_entities": [
+      "Timesheet",
+      "PayrollRun"
+    ],
+    "constraints": [
+      "Hourly rate is taken from the salary assignment."
+    ],
+    "non_functional_requirements": [
+      "The calculation completes in under 100 ms."
+    ],
+    "risk_keywords": [
+      "payroll",
+      "money"
+    ],
+    "source": "operator"
+  },
+  "requested_at": "2026-11-16T05:53:20.260972+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-16T05:53:31.919644+00:00",
+  "decided_by": "admin",
+  "note": ""
+}

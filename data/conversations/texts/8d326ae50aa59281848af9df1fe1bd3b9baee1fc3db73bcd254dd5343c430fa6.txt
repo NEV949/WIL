@@ -1,0 +1,60 @@
+{
+  "suite_id": "TS-001",
+  "requirement_id": "REQ-001",
+  "tests": [
+    {
+      "test_id": "TC-001",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nimport time\nfrom datetime import datetime, timezone, timedelta\nfrom zoneinfo import ZoneInfo\nfrom punch_service import validate_punch, ValidationResult\n\ndef test_valid_punch():\n    # Office location (12.9716, 77.5946) at 09:15 IST (UTC+5:30)\n    ts = datetime(2024, 5, 1, 9, 15, tzinfo=ZoneInfo('Asia/Kolkata'))\n    result = validate_punch(employee_id=123, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert isinstance(result, ValidationResult)\n    assert result.valid is True\n    assert result.reason == \"Punch within geofence and allowed time window.\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-002",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nfrom datetime import datetime, timezone, timedelta\nfrom zoneinfo import ZoneInfo\nfrom punch_service import validate_punch, ValidationResult\n\ndef test_outside_radius():\n    # Approximate a point ~150m north of the office (0.00135° latitude ≈ 150m)\n    ts = datetime(2024, 5, 1, 10, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    lat_out = 12.9716 + 0.00135\n    lng_out = 77.5946\n    result = validate_punch(employee_id=124, timestamp=ts, lat=lat_out, lng=lng_out)\n    assert isinstance(result, ValidationResult)\n    assert result.valid is False\n    assert result.reason == \"Location outside 100 m radius.\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-003",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\nfrom punch_service import validate_punch, ValidationResult\n\ndef test_outside_time_window():\n    # Valid location but timestamp 05:45 IST (before 06:00)\n    ts = datetime(2024, 5, 1, 5, 45, tzinfo=ZoneInfo('Asia/Kolkata'))\n    result = validate_punch(employee_id=125, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert isinstance(result, ValidationResult)\n    assert result.valid is False\n    assert result.reason == \"Timestamp outside allowed window (06:00‑22:00).\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-004",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\nfrom punch_service import validate_punch\nfrom pydantic import ValidationError\n\ndef test_invalid_latitude_raises():\n    ts = datetime(2024, 5, 1, 9, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    with pytest.raises(ValidationError):\n        validate_punch(employee_id=126, timestamp=ts, lat=100.0, lng=77.5946)  # latitude out of -90..90\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-005",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nfrom punch_service import validate_punch\nfrom pydantic import ValidationError\n\ndef test_invalid_timestamp_type_raises():\n    # Pass a string instead of datetime\n    with pytest.raises(ValidationError):\n        validate_punch(employee_id=127, timestamp='2024-05-01T09:00:00', lat=12.9716, lng=77.5946)\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-006",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "punch_service",
+      "test_code": "import pytest\nimport time\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\nfrom punch_service import validate_punch\n\ndef test_performance_under_5ms():\n    ts = datetime(2024, 5, 1, 12, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    start = time.perf_counter()\n    validate_punch(employee_id=128, timestamp=ts, lat=12.9716, lng=77.5946)\n    elapsed_ms = (time.perf_counter() - start) * 1000\n    assert elapsed_ms < 5, f\"Validation took {elapsed_ms:.2f}ms, exceeds 5ms limit\"\n",
+      "kind": "performance",
+      "deterministic": true,
+      "seed": null
+    }
+  ]
+}

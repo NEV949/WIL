@@ -1,0 +1,55 @@
+{
+  "approval_id": "5641c3fa2f8a-approval_tests-2a82bff3ad28ea4e",
+  "run_id": "5641c3fa2f8a",
+  "gate_id": "approval_tests",
+  "stage": 2,
+  "artifact_type": "tests",
+  "artifact": {
+    "schema_version": "1.0",
+    "created_at": "2026-11-17T12:00:00Z",
+    "suite_id": "suite-REQ-001",
+    "requirement_id": "REQ-001",
+    "tests": [
+      {
+        "test_id": "test_valid_punch",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_valid_punch():\n    \"\"\"Acceptance Criterion 1: valid punch within geofence and time window.\"\"\"\n    result = validate_punch(\n        employee_id=123,\n        timestamp=datetime(2023, 5, 1, 9, 30, 0),  # 09:30 local time\n        lat=12.9717,\n        lng=77.5945\n    )\n    assert result[\"valid\"] is True\n    assert result[\"reason\"] == \"Punch accepted\"\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_invalid_location",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_invalid_location():\n    \"\"\"Acceptance Criterion 2: reject punch when outside 100 m radius.\"\"\"\n    # Coordinates ~200 m away from office location\n    result = validate_punch(\n        employee_id=124,\n        timestamp=datetime(2023, 5, 1, 10, 0, 0),\n        lat=12.9730,\n        lng=77.5965\n    )\n    assert result[\"valid\"] is False\n    assert \"outside\" in result[\"reason\"].lower()\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_invalid_time",
+        "requirement_ids": [
+          "REQ-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_invalid_time():\n    \"\"\"Acceptance Criterion 3: reject punch when timestamp is outside allowed window.\"\"\"\n    # Time before 06:00\n    result = validate_punch(\n        employee_id=125,\n        timestamp=datetime(2023, 5, 1, 5, 45, 0),\n        lat=12.9716,\n        lng=77.5946\n    )\n    assert result[\"valid\"] is False\n    assert \"outside\" in result[\"reason\"].lower() or \"time\" in result[\"reason\"].lower()\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      }
+    ]
+  },
+  "tenant_id": "tenant-a",
+  "requested_at": "2026-11-17T20:06:20.537451+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T20:06:57.144758+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "2a82bff3ad28ea4e73202430e6826b5341155c8451f96f0b29318728d10490b6"
+}

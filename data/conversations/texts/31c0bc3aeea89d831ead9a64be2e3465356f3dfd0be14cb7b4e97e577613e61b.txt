@@ -1,0 +1,74 @@
+```json
+{
+  "suite_id": "SUITE-REQ-001",
+  "requirement_id": "REQ-001",
+  "tests": [
+    {
+      "test_id": "TEST-001",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom pydantic import ValidationError\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_success():\n    # AC1: Valid punch at 09:30 IST within radius\n    tz = pytz.timezone('Asia/Kolkata')\n    ts = tz.localize(datetime(2023, 10, 1, 9, 30))\n    result = validate_punch(employee_id=123, timestamp=ts, lat=12.9717, lng=77.5945)\n    assert result.valid is True\n    assert result.reason == \"Punch accepted\"",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TEST-002",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_outside_radius():\n    # AC2: Punch outside the 100m radius\n    tz = pytz.timezone('Asia/Kolkata')\n    ts = tz.localize(datetime(2023, 10, 1, 9, 30))\n    # Coordinates far from Bangalore office\n    result = validate_punch(employee_id=123, timestamp=ts, lat=13.0, lng=78.0)\n    assert result.valid is False\n    assert result.reason == \"Location outside permitted radius\"",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TEST-003",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_outside_time_window_late():\n    # AC3: Punch at 23:00 IST\n    tz = pytz.timezone('Asia/Kolkata')\n    ts = tz.localize(datetime(2023, 10, 1, 23, 0))\n    result = validate_punch(employee_id=123, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert result.valid is False\n    assert result.reason == \"Timestamp outside permitted window\"",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TEST-004",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_outside_time_window_early():\n    # Boundary check: Punch at 05:59 IST\n    tz = pytz.timezone('Asia/Kolkata')\n    ts = tz.localize(datetime(2023, 10, 1, 5, 59))\n    result = validate_punch(employee_id=123, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert result.valid is False\n    assert result.reason == \"Timestamp outside permitted window\"",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TEST-005",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom pydantic import ValidationError\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_invalid_types():\n    # AC4: Invalid types raise pydantic.ValidationError\n    tz = pytz.timezone('Asia/Kolkata')\n    ts = tz.localize(datetime(2023, 10, 1, 9, 30))\n    \n    with pytest.raises(ValidationError):\n        # employee_id should be int, passing string\n        validate_punch(employee_id=\"not-an-int\", timestamp=ts, lat=12.9716, lng=77.5946)",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TEST-006",
+      "requirement_ids": [
+        "REQ-001"
+      ],
+      "target_module": "punch_validator",
+      "test_code": "from datetime import datetime\nimport pytz\nfrom punch_validator import validate_punch\n\ndef test_validate_punch_timezone_conversion():\n    # Constraint: Time comparisons must be performed in Asia/Kolkata regardless of input\n    # 09:30 IST is 04:00 UTC\n    utc_tz = pytz.utc\n    ts_utc = utc_tz.localize(datetime(2023, 10, 1, 4, 0))\n    result = validate_punch(employee_id=123, timestamp=ts_utc, lat=12.9716, lng=77.5946)\n    assert result.valid is True\n    assert result.reason == \"Punch accepted\"",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    }
+  ]
+}
+```

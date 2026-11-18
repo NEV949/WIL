@@ -1,0 +1,31 @@
+{
+  "approval_id": "8466f46ea3ae-approval_tests-2d63c8a6b68836cb",
+  "run_id": "8466f46ea3ae",
+  "gate_id": "approval_tests",
+  "stage": 2,
+  "artifact_type": "tests",
+  "artifact": {
+    "schema_version": "1.0",
+    "created_at": "2026-11-16T06:05:13.998702+00:00",
+    "suite_id": "SUITE-1",
+    "requirement_id": "REQ-1",
+    "tests": [
+      {
+        "test_id": "test-overtime-pay",
+        "requirement_ids": [
+          "REQ-1"
+        ],
+        "target_module": "pkg.overtime",
+        "test_code": "from pkg.overtime import overtime_pay\n\n\ndef test_overtime_is_paid_at_one_and_a_half():\n    assert overtime_pay(45.0, 10.0) == 475.0\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": 7
+      }
+    ]
+  },
+  "requested_at": "2026-11-16T06:05:13.999714+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-16T06:05:19.688707+00:00",
+  "decided_by": "admin",
+  "note": ""
+}

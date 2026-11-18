@@ -1,0 +1,11 @@
+{
+  "standard_library": [
+    "__future__", "abc", "ast", "base64", "bisect", "calendar", "collections", "copy",
+    "dataclasses", "datetime", "decimal", "enum", "fractions", "functools", "hashlib",
+    "heapq", "itertools", "json", "logging", "math", "numbers", "operator", "pathlib",
+    "random", "re", "statistics", "string", "sys", "textwrap", "time", "typing",
+    "unicodedata", "unittest", "uuid", "zoneinfo"
+  ],
+  "sandbox_packages": ["pydantic", "pytest", "hypothesis", "faker", "polyfactory"],
+  "blocked_imports": ["os", "subprocess", "socket", "requests", "urllib", "paramiko"]
+}

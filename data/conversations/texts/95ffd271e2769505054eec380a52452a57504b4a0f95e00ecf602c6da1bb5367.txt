@@ -1,0 +1,60 @@
+{
+  "suite_id": "TS-001",
+  "requirement_id": "REQ-001",
+  "tests": [
+    {
+      "test_id": "TC-001",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nfrom zoneinfo import ZoneInfo\nfrom validation import validate_punch, ValidationResult\n\ndef test_valid_punch():\n    # Office location (12.9716, 77.5946) exactly, time within window (09:15 IST)\n    ts = datetime.datetime(2024, 5, 1, 9, 15, tzinfo=ZoneInfo('Asia/Kolkata'))\n    result: ValidationResult = validate_punch(employee_id=123, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert result.valid is True\n    assert result.reason == \"Punch within geofence and allowed time window.\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-002",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nfrom zoneinfo import ZoneInfo\nfrom validation import validate_punch, ValidationResult\n\ndef test_location_outside_radius():\n    # Approx 150 m north of office (add ~0.00135° latitude ≈ 150 m)\n    ts = datetime.datetime(2024, 5, 1, 12, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    lat_out = 12.9716 + 0.00135\n    result: ValidationResult = validate_punch(employee_id=124, timestamp=ts, lat=lat_out, lng=77.5946)\n    assert result.valid is False\n    assert result.reason == \"Location outside 100 m radius.\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-003",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nfrom zoneinfo import ZoneInfo\nfrom validation import validate_punch, ValidationResult\n\ndef test_time_outside_window():\n    # Valid location but time before 06:00 IST\n    ts = datetime.datetime(2024, 5, 1, 5, 45, tzinfo=ZoneInfo('Asia/Kolkata'))\n    result: ValidationResult = validate_punch(employee_id=125, timestamp=ts, lat=12.9716, lng=77.5946)\n    assert result.valid is False\n    assert result.reason == \"Timestamp outside allowed window (06:00‑22:00).\"\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-004",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nfrom zoneinfo import ZoneInfo\nimport pytest\nfrom validation import validate_punch\n\ndef test_invalid_latitude_type():\n    ts = datetime.datetime(2024, 5, 1, 9, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    with pytest.raises(Exception) as exc:\n        validate_punch(employee_id=126, timestamp=ts, lat='12.9716', lng=77.5946)\n    # Pydantic raises ValidationError (or TypeError depending on strict config)\n    assert 'validation' in str(exc.value).lower()\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-005",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nfrom zoneinfo import ZoneInfo\nimport pytest\nfrom validation import validate_punch\n\ndef test_invalid_latitude_range():\n    ts = datetime.datetime(2024, 5, 1, 9, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    # Latitude 100 is outside the allowed -90..90 range\n    with pytest.raises(Exception) as exc:\n        validate_punch(employee_id=127, timestamp=ts, lat=100.0, lng=77.5946)\n    assert 'validation' in str(exc.value).lower()\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "TC-006",
+      "requirement_ids": ["REQ-001"],
+      "target_module": "validation",
+      "test_code": "import datetime\nimport time\nfrom zoneinfo import ZoneInfo\nfrom validation import validate_punch\n\ndef test_performance_under_5ms():\n    ts = datetime.datetime(2024, 5, 1, 10, 0, tzinfo=ZoneInfo('Asia/Kolkata'))\n    start = time.perf_counter()\n    validate_punch(employee_id=128, timestamp=ts, lat=12.9716, lng=77.5946)\n    elapsed_ms = (time.perf_counter() - start) * 1000\n    assert elapsed_ms < 5, f\"Validation took {elapsed_ms:.2f} ms, exceeds 5 ms limit\"\n",
+      "kind": "performance",
+      "deterministic": true,
+      "seed": null
+    }
+  ]
+}

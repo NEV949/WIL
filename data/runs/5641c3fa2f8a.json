@@ -1,0 +1,424 @@
+{
+  "run_id": "5641c3fa2f8a",
+  "sop_id": "sop_lightweight",
+  "tenant_id": "tenant-a",
+  "request": "Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models",
+  "status": "failed",
+  "step_index": 0,
+  "suspended_step": null,
+  "outputs": {
+    "requirements": {
+      "requirement_id": "REQ-001",
+      "title": "Geofenced Time‑Punch Validation Microservice Function",
+      "description": "Provide a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> ValidationResult` that verifies the punch is within 100 m of the office location (12.9716, 77.5946) and between 06:00 and 22:00 local office time. The function returns a JSON object `{ \"valid\": bool, \"reason\": str }`. The implementation must use strictly typed Pydantic models for inputs and outputs.",
+      "acceptance_criteria": [
+        "The function returns `valid: true` with reason \"Punch accepted\" when the supplied coordinates are within 100 m of (12.9716, 77.5946) and the timestamp is between 06:00 and 22:00 office local time.",
+        "The function returns `valid: false` with an appropriate reason when the location is outside the 100 m radius.",
+        "The function returns `valid: false` with an appropriate reason when the timestamp is outside the allowed window."
+      ],
+      "domain_entities": [
+        "Employee",
+        "Punch"
+      ],
+      "entities": [
+        {
+          "name": "Employee",
+          "description": "Represents an employee who can punch in/out.",
+          "attributes": [
+            "employee_id",
+            "name"
+          ]
+        },
+        {
+          "name": "Punch",
+          "description": "A time‑punch record submitted by an employee.",
+          "attributes": [
+            "employee_id",
+            "timestamp",
+            "latitude",
+            "longitude"
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "source": "Employee",
+          "target": "Punch",
+          "kind": "references",
+          "description": "An employee creates a punch record."
+        }
+      ],
+      "task_type": "feature",
+      "constraints": [],
+      "non_functional_requirements": [],
+      "risk_keywords": [
+        "money",
+        "payroll",
+        "access",
+        "deletion"
+      ],
+      "declared_permissions": [],
+      "source": null
+    },
+    "code": {
+      "schema_version": "1.0",
+      "created_at": "2024-05-20T12:00:00Z",
+      "patch_id": "patch-req-001-geofenced-punch",
+      "requirement_id": "REQ-001",
+      "summary": "Implemented a geofenced time-punch validation microservice function that validates employee punches based on location and time using typed Pydantic models.",
+      "files": [
+        {
+          "path": "microservice.py",
+          "operation": "create",
+          "content": "from datetime import datetime, time\nfrom pydantic import BaseModel, Field\nfrom typing import Union\nimport math\n\nOFFICE_LAT = 12.9716\nOFFICE_LNG = 77.5946\nRADIUS_METERS = 100.0\nMIN_TIME = time(6, 0, 0)\nMAX_TIME = time(22, 0, 0)\n\nclass ValidationResult(BaseModel):\n    valid: bool\n    reason: str\n\ndef haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"\n    Calculate the great-circle distance between two points on the Earth's surface in meters.\n    \"\"\"\n    R = 6371000  # Earth's radius in meters\n\n    lat1_rad = math.radians(lat1)\n    lat2_rad = math.radians(lat2)\n    dlat = lat2_rad - lat1_rad\n    dlng = math.radians(lng2) - math.radians(lng1)\n\n    a = (math.sin(dlat / 2) ** 2 +\n         math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlng / 2) ** 2)\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))\n\n    return R * c\n\ndef validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> dict:\n    \"\"\"\n    Validate a time punch based on location and time.\n    \"\"\"\n    # 1. Location validation\n    distance = haversine(OFFICE_LAT, OFFICE_LNG, lat, lng)\n    if distance > RADIUS_METERS:\n        result = ValidationResult(valid=False, reason=\"Location is outside the allowed geofence\")\n        return result.model_dump()\n\n    # 2. Time validation\n    current_time = timestamp.time()\n    if current_time < MIN_TIME or current_time > MAX_TIME:\n        result = ValidationResult(valid=False, reason=\"Timestamp is outside the allowed window\")\n        return result.model_dump()\n\n    # 3. Success\n    result = ValidationResult(valid=True, reason=\"Punch accepted\")\n    return result.model_dump()\n",
+          "sha256": "abc123"
+        }
+      ]
+    },
+    "tests": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T12:00:00Z",
+      "suite_id": "suite-REQ-001",
+      "requirement_id": "REQ-001",
+      "tests": [
+        {
+          "test_id": "test_valid_punch",
+          "requirement_ids": [
+            "REQ-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_valid_punch():\n    \"\"\"Acceptance Criterion 1: valid punch within geofence and time window.\"\"\"\n    result = validate_punch(\n        employee_id=123,\n        timestamp=datetime(2023, 5, 1, 9, 30, 0),  # 09:30 local time\n        lat=12.9717,\n        lng=77.5945\n    )\n    assert result[\"valid\"] is True\n    assert result[\"reason\"] == \"Punch accepted\"\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        },
+        {
+          "test_id": "test_invalid_location",
+          "requirement_ids": [
+            "REQ-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_invalid_location():\n    \"\"\"Acceptance Criterion 2: reject punch when outside 100 m radius.\"\"\"\n    # Coordinates ~200 m away from office location\n    result = validate_punch(\n        employee_id=124,\n        timestamp=datetime(2023, 5, 1, 10, 0, 0),\n        lat=12.9730,\n        lng=77.5965\n    )\n    assert result[\"valid\"] is False\n    assert \"outside\" in result[\"reason\"].lower()\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        },
+        {
+          "test_id": "test_invalid_time",
+          "requirement_ids": [
+            "REQ-001"
+          ],
+          "target_module": "validate_punch",
+          "test_code": "import pytest\nfrom datetime import datetime\nfrom service import validate_punch\n\ndef test_invalid_time():\n    \"\"\"Acceptance Criterion 3: reject punch when timestamp is outside allowed window.\"\"\"\n    # Time before 06:00\n    result = validate_punch(\n        employee_id=125,\n        timestamp=datetime(2023, 5, 1, 5, 45, 0),\n        lat=12.9716,\n        lng=77.5946\n    )\n    assert result[\"valid\"] is False\n    assert \"outside\" in result[\"reason\"].lower() or \"time\" in result[\"reason\"].lower()\n",
+          "kind": "unit",
+          "deterministic": true,
+          "seed": null
+        }
+      ]
+    },
+    "sandbox_run": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T20:07:18.702222+00:00",
+      "run_id": "run-patch-req-001-geofenced-punch-1794946038",
+      "requirement_id": "REQ-001",
+      "command": "/opt/venv/bin/python /workspace/_oracle_runner.py -q -p no:cacheprovider -rA tests --cov microservice.py --cov-report term",
+      "exit_code": 0,
+      "stdout": ".\nWARNING: Failed to generate report: No data to report.\n\n                                                                         [100%]\n==================================== PASSES ====================================\n=========================== short test summary info ============================\nPASSED tests/test_validate_punch.py::test_invalid_time\n1 passed in 2.71s\n=== ORACLE_SECURITY_EVENTS ===\n[]\n",
+      "stderr": "/opt/venv/lib/python3.12/site-packages/coverage/inorout.py:560: CoverageWarning: Module microservice.py was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.17.3/messages.html#warning-module-not-imported\n  self.warn(f\"Module {pkg} was never imported.\", slug=\"module-not-imported\")\n/opt/venv/lib/python3.12/site-packages/coverage/control.py:967: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.17.3/messages.html#warning-no-data-collected\n  self._warn(\"No data was collected.\", slug=\"no-data-collected\")\n/opt/venv/lib/python3.12/site-packages/pytest_cov/plugin.py:366: CovReportWarning: Failed to generate report: No data to report.\n\n  warnings.warn(CovReportWarning(message), stacklevel=1)\n",
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 15.672,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [
+        "microservice.py",
+        "service.py",
+        "tests/test_validate_punch.py",
+        "_scanners/ast_policy.py",
+        "_scanners/ast_runner.py",
+        "_scanners/import_policy.json",
+        "_scanners/oracle_rules.yml"
+      ],
+      "passed_tests": [
+        "tests/test_validate_punch.py::test_invalid_time"
+      ],
+      "failed_tests": [],
+      "risk_tier": "low",
+      "risk_signals": [],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": null,
+      "deterministic": false,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\5641c3fa2f8a",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    },
+    "security_gate": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T20:07:58.323041+00:00",
+      "run_id": "security-run-patch-req-001-geofenced-punch-1794946038",
+      "requirement_id": "REQ-001",
+      "command": "security_gate",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 0.0,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "risk_tier": "high",
+      "risk_signals": [
+        "keyword:payroll"
+      ],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": null,
+      "deterministic": false,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\5641c3fa2f8a",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    },
+    "acceptance_gate": {
+      "schema_version": "1.0",
+      "created_at": "2026-11-17T20:08:07.462831+00:00",
+      "run_id": "acceptance-run-patch-req-001-geofenced-punch-1794946038",
+      "requirement_id": "REQ-001",
+      "command": "acceptance_gate",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "tests_passed": 1,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "coverage_percent": 0.0,
+      "duration_seconds": 0.0,
+      "mypy_clean": false,
+      "security_events": [],
+      "produced_files": [],
+      "passed_tests": [],
+      "failed_tests": [],
+      "risk_tier": "high",
+      "risk_signals": [
+        "keyword:payroll"
+      ],
+      "security_findings": [
+        {
+          "rule": "B108",
+          "severity": "medium",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temp file/directory.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "B101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+          "tool": "bandit"
+        },
+        {
+          "rule": "S108",
+          "severity": "low",
+          "file": "_oracle_runner.py",
+          "line": 21,
+          "message": "Probable insecure usage of temporary file or directory: \"/tmp\"",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 18,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        },
+        {
+          "rule": "S101",
+          "severity": "low",
+          "file": "tests/test_validate_punch.py",
+          "line": 19,
+          "message": "Use of `assert` detected",
+          "tool": "ruff"
+        }
+      ],
+      "acceptance": {
+        "conditions": [
+          {
+            "name": "tests_pass",
+            "passed": true,
+            "detail": "1 passed, 0 failed (exit code 0)"
+          },
+          {
+            "name": "mypy_strict_clean",
+            "passed": false,
+            "detail": "mypy --strict failed"
+          },
+          {
+            "name": "coverage_target",
+            "passed": false,
+            "detail": "coverage 0.00% against a target of 80%"
+          },
+          {
+            "name": "security_clean",
+            "passed": true,
+            "detail": "no high or critical finding"
+          },
+          {
+            "name": "requirements_covered",
+            "passed": true,
+            "detail": "every requirement has a passing test"
+          },
+          {
+            "name": "deterministic",
+            "passed": true,
+            "detail": "two runs of the suite produced the same result"
+          },
+          {
+            "name": "human_approval_for_high_risk",
+            "passed": true,
+            "detail": "the task is high risk and needs the approval 5641c3fa2f8a-risk_tier-9d54668e9f8f513c"
+          }
+        ],
+        "risk_tier": "high",
+        "approval_id": "5641c3fa2f8a-risk_tier-9d54668e9f8f513c"
+      },
+      "deterministic": true,
+      "workspace_mount": "ro",
+      "writable_paths": [
+        "/tmp",
+        "/scratch"
+      ],
+      "workspace_path": "C:\\Users\\Joy\\Documents\\Qoder\\2026-11-16\\3ce07929\\data\\workspaces\\5641c3fa2f8a",
+      "artifact_id": "",
+      "manifest_path": "",
+      "deployment": null
+    }
+  },
+  "approval_id": null
+}

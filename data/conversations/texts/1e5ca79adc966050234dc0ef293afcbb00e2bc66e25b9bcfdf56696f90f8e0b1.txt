@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-05-23T00:00:00Z",
+  "patch_id": "REQ-PUNCH-001-PATCH-001",
+  "requirement_id": "REQ-PUNCH-001",
+  "summary": "Implement geofenced and time-restricted punch validation microservice using Pydantic models accurate to geodesic calculation.",
+  "files": [
+    {
+      "path": "src/services/__init__.py",
+      "operation": "create",
+      "content": "",
+      "sha256": null
+    },
+    {
+      "path": "src/services/punch_validation.py",
+      "operation": "create",
+      "content": "from enum import Enum\nfrom typing import Optional\nfrom pydantic import BaseModel, Field\nfrom datetime import datetime, timedelta\n\n\nclass OfficeLocation(BaseModel):\n    latitude: float = Field(..., gt=-90, lt=90)\n    longitude: float = Field(..., gt=-180, lt=180)\n    geofence_radius_meters: float = Field(..., gt=0)\n    timezone: str = \"Asia/Kolkata\"\n\n\nclass PunchRequest(BaseModel):\n    employee_id: str\n    timestamp: datetime\n    lat: float = Field(..., gt=-90, lt=90)\n    lng: float = Field(..., gt=-180, lt=180)\n\n\nclass ValidationStatus(str, Enum):\n    SUCCESS = \"success\"\n    GEOFENCE_VIOLATION = \"geofence_violation\"\n    TIME_VIOLATION = \"time_violation\"\n    BOTH = \"both\"\n\n\nclass PunchValidationResult(BaseModel):\n    valid: bool\n    reason: Optional[str] = None\n    status: Optional[ValidationStatus] = None\n\n\nOFFICE_LOCATION = OfficeLocation(\n    latitude=12.9716,\n    longitude=77.5946,\n    geofence_radius_meters=100.0,\n    timezone=\"Asia/Kolkata\"\n)\n\ndef haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> float:\n    \"\"\"\n    Calculate the geodesic distance between two points on Earth's surface in meters.\n    Based on the Haversine formula for higher precision.\n    \"\"\"\n    R = 6371000.0  # Earth's radius in meters\n    \n    phi1 = lat1 * (3.141592653589793 / 180)\n    phi2 = lat2 * (3.141592653589793 / 180)\n    delta_phi = (lat2 - lat1) * (3.141592653589793 / 180)\n    delta_lambda = (lng2 - lng1) * (3.141592653589793 / 180)\n    \n    a = (sin(delta_phi / 2) ** 2) + (\n        cos(phi1) * cos(phi2) * (sin(delta_lambda / 2) ** 2)\n    )
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    
+    return R * c\n\ndef validate_punch(employee_id: str, timestamp: datetime, lat: float, lng: float) -> PunchValidationResult:\n    \"\"\"\n    Validates an employee punch request based on geofence and time window restrictions.\n    Returns a PunchValidationResult object indicating validity and reason.\n    \"\"\"\n    request = PunchRequest(employee_id=employee_id, timestamp=timestamp, lat=lat, lng=lng)\n    \n    if not request:\n        return PunchValidationResult(valid=False, reason=\"Invalid input\")\n\n    distance_meters = haversine_distance(\n        request.lat, request.lng, OFFICE_LOCATION.latitude, OFFICE_LOCATION.longitude\n    )\n    \n    dt_local = request.timestamp.astimezone(\"Asia/Kolkata\")\n    start_time = dt_local.replace(hour=6, minute=0, second=0, microsecond=0)\n    end_time = dt_local.replace(hour=22, minute=0, second=0, microsecond=0)\n    \n    in_geofence = distance_meters <= OFFICE_LOCATION.geofence_radius_meters\n    in_time_window = start_time <= dt_local <= end_time\n    \n    valid = in_geofence and in_time_window\n    reason = None\n\n    if not valid:\n        if not in_geofence and not in_time_window:\n            status = ValidationStatus.BOTH\n            reason = f\"Geofence violation (outside {OFFICE_LOCATION.geofence_radius_meters}m range) and time window violation.\")
+        elif not in_geofence:
+            status = ValidationStatus.GEOFENCE_VIOLATION
+            reason = f\"Geofence violation: punched outside {OFFICE_LOCATION.geofence_radius_meters}m radius around office.\"
+        else:
+            status = ValidationStatus.TIME_VIOLATION
+            reason = \"Time window violation: punched outside 06:00-22:00 local office time.\"
+            
+        return PunchValidationResult(valid=False, reason=reason, status=status)\n\n    return PunchValidationResult(valid=True, reason=None, status=ValidationStatus.SUCCESS)\n",
+      "sha256": null
+    },
+    {
+      "path": "tests/__init__.py",
+      "operation": "create",
+      "content": "",
+      "sha256": null
+    },
+    {
+      "path": "tests/test_punch_validation.py",
+      "operation": "create",
+      "content": "import unittest\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\nfrom src.services.punch_validation import validate_punch\n\nclass TestValidatePunch(unittest.TestCase):\n\n    def setUp(self):\n        self.office_lat = 12.9716\n        self.office_lng = 77.5946\n        self.tz = ZoneInfo(\"Asia/Kolkata\")\n\n    def test_valid_punch_within_geofence_and_time(self):\n        punch_time = datetime(2023, 10, 1, 9, 0, 0, tzinfo=self.tz)\n        # Same location: distance is 0 (well within 100m)\n        result = validate_punch(\"EMP001\", punch_time, self.office_lat, self.office_lng)\n        self.assertTrue(result.valid)\n        self.assertIsNone(result.reason)\n\n    def test_invalid_punch_outside_geofence(self):\n        punch_time = datetime(2023, 10, 1, 9, 0, 0, tzinfo=self.tz)\n        # Bengaluru distance: ~1200km, well outside 100m\n        lat = self.office lat + 0.001 # 111 meters roughly... actually let's pick a definite outside \n        lng = self.office_lng + 0.001 \n        # 0.001 degree latitude is 111.19 meters at equator so about 111 meters. This might actually be close to 100...\n        # Let's use 0.002 to be safe (>220m)\n        lat = self.office_lat + 0.002\n        lng = self.office_lng\n        \n        result = validate_punch(\"EMP001\", punch_time, lat, self.office_lng)\n        self.assertFalse(result.valid)\n        self.assertIn(\"geofence\", result.reason.lower())\n\n    def test_invalid_punch_outside_time_window(self):\n        # 05:59 is before 06:00\n        punch_time = datetime(2023, 10, 1, 5, 59, 0, tzinfo=self.tz)\n        result = validate_punch(\"EMP001\", punch_time, self.office_lat, self.office_lng)\n        self.assertFalse(result.valid)\n        self.assertIn(\"time\", result.reason.lower())\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+      "sha256": null
+    },
+    {
+      "path": "src/services/punch_validation.py",
+      "operation": "create",
+      "content": "from datetime import datetime\nfrom typing import Optional\nfrom pydantic import BaseModel, Field\n\nOFFICE_LATITUDE = 12.9716\nOFFICE_LONGITUDE = 77.5946\nGEOFENCE_RADIUS_M = 100.0\n\nPUNCH_START_HOUR = 6\nPUNCH_END_HOUR = 22\n\

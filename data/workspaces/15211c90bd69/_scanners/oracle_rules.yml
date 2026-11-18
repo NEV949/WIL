@@ -1,0 +1,168 @@
+# Local Semgrep rules for the Oracle-HCM engine.
+#
+# The sandbox has no network, so the rules are shipped with the project
+# instead of being pulled from semgrep.dev. The rules cover the sinks the
+# default-deny allowlist blocks: dynamic execution, process control, network
+# access and obfuscated payloads.
+rules:
+  - id: oracle-hcm.eval
+    message: eval() executes arbitrary code.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: eval(...)
+
+  - id: oracle-hcm.exec
+    message: exec() executes arbitrary code.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: exec(...)
+
+  - id: oracle-hcm.dunder-import
+    message: __import__() loads code at runtime.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: __import__(...)
+
+  - id: oracle-hcm.compile
+    message: compile() builds code at runtime.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: compile(...)
+
+  - id: oracle-hcm.os-system
+    message: os.system() runs a shell command.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: os.system(...)
+
+  - id: oracle-hcm.os-popen
+    message: os.popen() runs a shell command.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: os.popen(...)
+
+  - id: oracle-hcm.subprocess
+    message: The subprocess module runs other programs.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: subprocess.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(run|call|check_call|check_output|Popen)$
+
+  - id: oracle-hcm.socket
+    message: The socket module opens a network connection.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: socket.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(socket|create_connection|connect)$
+
+  - id: oracle-hcm.urllib
+    message: The urllib module opens a network connection.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: urllib.request.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(urlopen|urlretrieve|Request)$
+
+  - id: oracle-hcm.requests
+    message: The requests module opens a network connection.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: requests.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(get|post|put|delete|patch|head|request|Session)$
+
+  - id: oracle-hcm.httpx
+    message: The httpx module opens a network connection.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: httpx.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(get|post|put|delete|patch|head|request|Client|AsyncClient)$
+
+  - id: oracle-hcm.base64-exec
+    message: Base64 content is decoded and executed.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: exec(base64.b64decode(...))
+      - pattern: eval(base64.b64decode(...))
+
+  - id: oracle-hcm.base64-decode
+    message: Base64 content is decoded at runtime.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: base64.b64decode(...)
+
+  - id: oracle-hcm.pickle-loads
+    message: Pickle deserialisation executes code.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+
+  - id: oracle-hcm.yaml-load
+    message: yaml.load() without a safe loader can execute code.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: yaml.load(...)
+      - pattern-not: yaml.safe_load(...)
+
+  - id: oracle-hcm.hashlib-weak
+    message: A weak hash algorithm is used.
+    severity: WARNING
+    languages: [python]
+    patterns:
+      - pattern: hashlib.$ALGO(...)
+      - metavariable-regex:
+          metavariable: $ALGO
+          regex: ^(md5|sha1)$
+
+  - id: oracle-hcm.multiprocessing
+    message: The multiprocessing module can spawn processes.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: multiprocessing.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(Process|Pool|ProcessPoolExecutor|ThreadPoolExecutor|fork)$
+
+  - id: oracle-hcm.ctypes
+    message: ctypes loads native code.
+    severity: ERROR
+    languages: [python]
+    patterns:
+      - pattern: ctypes.$FUNC(...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: ^(CDLL|WinDLL|cdll|windll|dlopen)$
+
+  - id: oracle-hcm.os-fork
+    message: A process is forked.
+    severity: ERROR
+    languages: [python]
+    pattern-either:
+      - pattern: os.fork(...)
+      - pattern: os.forkpty(...)
+      - pattern: os.posix_spawn(...)

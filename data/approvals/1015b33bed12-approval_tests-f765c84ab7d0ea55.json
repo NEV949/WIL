@@ -1,0 +1,65 @@
+{
+  "approval_id": "1015b33bed12-approval_tests-f765c84ab7d0ea55",
+  "run_id": "1015b33bed12",
+  "gate_id": "approval_tests",
+  "stage": 2,
+  "artifact_type": "tests",
+  "artifact": {
+    "schema_version": "1.0",
+    "created_at": "2026-11-17T13:45:00Z",
+    "suite_id": "punch_validation_suite_001",
+    "requirement_id": "REQ-PUNCH-001",
+    "tests": [
+      {
+        "test_id": "test_valid_punch_within_geofence_and_time",
+        "requirement_ids": [
+          "REQ-PUNCH-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_valid_punch_within_geofence_and_time():\n    # Coordinates within ~50 meters of office location (12.9716, 77.5946)\n    lat = 12.9719\n    lng = 77.5949\n    # Timestamp at 09:30 local time (Asia/Kolkata)\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 9, 30, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E123', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is True\n    assert result.reason is None or result.reason == ''\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_geofence_violation",
+        "requirement_ids": [
+          "REQ-PUNCH-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_geofence_violation():\n    # Coordinates far from office (> 100 meters)\n    lat = 12.9750\n    lng = 77.6000\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 10, 0, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E124', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is False\n    assert 'geofence' in (result.reason or '').lower()\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_time_window_violation",
+        "requirement_ids": [
+          "REQ-PUNCH-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import datetime\nimport pytz\nfrom myservice import validate_punch, PunchRequest\n\ndef test_time_window_violation():\n    # Valid coordinates within geofence\n    lat = 12.9716\n    lng = 77.5946\n    # Timestamp at 23:15 local time (outside allowed window)\n    tz = pytz.timezone('Asia/Kolkata')\n    local_dt = tz.localize(datetime.datetime(2023, 5, 15, 23, 15, 0))\n    timestamp = local_dt.isoformat()\n    request = PunchRequest(employee_id='E125', timestamp=timestamp, lat=lat, lng=lng)\n    result = validate_punch(request)\n    assert result.valid is False\n    assert 'time' in (result.reason or '').lower()\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      },
+      {
+        "test_id": "test_pydantic_input_validation_error",
+        "requirement_ids": [
+          "REQ-PUNCH-001"
+        ],
+        "target_module": "validate_punch",
+        "test_code": "import pytest\nfrom myservice import validate_punch, PunchRequest\n\ndef test_pydantic_input_validation_error():\n    # Missing required field 'lat' should raise a validation error\n    with pytest.raises(ValueError):\n        request = PunchRequest(employee_id='E126', timestamp='2023-05-15T10:00:00+05:30', lng=77.5946)\n        validate_punch(request)\n",
+        "kind": "unit",
+        "deterministic": true,
+        "seed": null
+      }
+    ]
+  },
+  "requested_at": "2026-11-17T19:31:46.582564+00:00",
+  "status": "approved",
+  "decided_at": "2026-11-17T19:32:04.297757+00:00",
+  "decided_by": "nysa",
+  "note": "",
+  "artifact_hash": "f765c84ab7d0ea553f75466a2d187e4cb8143583dbb094fa859190430ec35f71"
+}

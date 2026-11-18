@@ -1,0 +1,1 @@
+{"mypy_errors": ["microservice.py:33: Missing type arguments for generic type \"dict\"", "service.py:33: Missing type arguments for generic type \"dict\""], "coverage_report": "88% for service.py", "coverage_issue": "microservice was never imported"}

@@ -1,0 +1,152 @@
+{
+  "artifact_hash": "8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87",
+  "edges": [
+    {
+      "kind": "defines",
+      "source": "class:pkg/attendance.py::Attendance",
+      "target": "function:pkg/attendance.py::Attendance::__init__"
+    },
+    {
+      "kind": "defines",
+      "source": "class:pkg/employee.py::Employee",
+      "target": "function:pkg/employee.py::Employee::__init__"
+    },
+    {
+      "kind": "produced_by",
+      "source": "file:pkg/attendance.py",
+      "target": "artifact:8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87"
+    },
+    {
+      "kind": "defines",
+      "source": "file:pkg/attendance.py",
+      "target": "class:pkg/attendance.py::Attendance"
+    },
+    {
+      "kind": "imports",
+      "source": "file:pkg/attendance.py",
+      "target": "file:pkg/employee.py"
+    },
+    {
+      "kind": "defines",
+      "source": "file:pkg/attendance.py",
+      "target": "function:pkg/attendance.py::Attendance::__init__"
+    },
+    {
+      "kind": "defines",
+      "source": "file:pkg/attendance.py",
+      "target": "function:pkg/attendance.py::attendance_of"
+    },
+    {
+      "kind": "produced_by",
+      "source": "file:pkg/employee.py",
+      "target": "artifact:8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87"
+    },
+    {
+      "kind": "defines",
+      "source": "file:pkg/employee.py",
+      "target": "class:pkg/employee.py::Employee"
+    },
+    {
+      "kind": "defines",
+      "source": "file:pkg/employee.py",
+      "target": "function:pkg/employee.py::Employee::__init__"
+    },
+    {
+      "kind": "produced_by",
+      "source": "file:tests/test_attendance.py",
+      "target": "artifact:8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87"
+    },
+    {
+      "kind": "imports",
+      "source": "file:tests/test_attendance.py",
+      "target": "file:pkg/attendance.py"
+    },
+    {
+      "kind": "imports",
+      "source": "file:tests/test_attendance.py",
+      "target": "file:pkg/employee.py"
+    },
+    {
+      "kind": "defines",
+      "source": "file:tests/test_attendance.py",
+      "target": "test:tests/test_attendance.py::test_attendance_of_an_employee"
+    },
+    {
+      "kind": "calls",
+      "source": "function:pkg/attendance.py::attendance_of",
+      "target": "class:pkg/attendance.py::Attendance"
+    },
+    {
+      "kind": "tests",
+      "source": "test:tests/test_attendance.py::test_attendance_of_an_employee",
+      "target": "class:pkg/employee.py::Employee"
+    },
+    {
+      "kind": "tests",
+      "source": "test:tests/test_attendance.py::test_attendance_of_an_employee",
+      "target": "function:pkg/attendance.py::attendance_of"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "artifact:8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87",
+      "kind": "artifact",
+      "name": "8be562fa5e856bfc2da7e46f80807c5a36de8187a592913c65fc3bcdac562d87"
+    },
+    {
+      "id": "class:pkg/attendance.py::Attendance",
+      "kind": "class",
+      "name": "Attendance",
+      "path": "pkg/attendance.py"
+    },
+    {
+      "id": "class:pkg/employee.py::Employee",
+      "kind": "class",
+      "name": "Employee",
+      "path": "pkg/employee.py"
+    },
+    {
+      "id": "file:pkg/attendance.py",
+      "kind": "file",
+      "name": "pkg/attendance.py",
+      "path": "pkg/attendance.py"
+    },
+    {
+      "id": "file:pkg/employee.py",
+      "kind": "file",
+      "name": "pkg/employee.py",
+      "path": "pkg/employee.py"
+    },
+    {
+      "id": "file:tests/test_attendance.py",
+      "kind": "file",
+      "name": "tests/test_attendance.py",
+      "path": "tests/test_attendance.py"
+    },
+    {
+      "id": "function:pkg/attendance.py::Attendance::__init__",
+      "kind": "function",
+      "name": "__init__",
+      "path": "pkg/attendance.py"
+    },
+    {
+      "id": "function:pkg/attendance.py::attendance_of",
+      "kind": "function",
+      "name": "attendance_of",
+      "path": "pkg/attendance.py"
+    },
+    {
+      "id": "function:pkg/employee.py::Employee::__init__",
+      "kind": "function",
+      "name": "__init__",
+      "path": "pkg/employee.py"
+    },
+    {
+      "id": "test:tests/test_attendance.py::test_attendance_of_an_employee",
+      "kind": "test",
+      "name": "test_attendance_of_an_employee",
+      "path": "tests/test_attendance.py"
+    }
+  ],
+  "parse_errors": []
+}

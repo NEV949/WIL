@@ -1,0 +1,54 @@
+{
+  "run_id": "7e78c131e51f",
+  "sop_id": "sop_lightweight",
+  "tenant_id": "tenant-a",
+  "request": "Write a Python microservice function validate_punch(employee_id, timestamp, lat, lng) that checks the punch is within 100 m of the office at (12.9716, 77.5946) and between 06:00 and 22:00 local office time. Return {valid, reason}. Use strictly typed Pydantic models.",
+  "status": "failed",
+  "step_index": 0,
+  "suspended_step": null,
+  "outputs": {
+    "requirements": {
+      "requirement_id": "REQ-001",
+      "title": "Geofenced Time‑Punch Validation Microservice Function",
+      "description": "Implement a Python microservice function `validate_punch(employee_id: int, timestamp: datetime, lat: float, lng: float) -> ValidationResult` that validates a time‑punch entry. The function must:\n1. Verify that the provided latitude/longitude are within a 100‑meter radius of the office located at (12.9716, 77.5946) using a precise haversine calculation.\n2. Confirm that the timestamp falls between 06:00 and 22:00 in the office's local timezone (India Standard Time, UTC+5:30).\n3. Return a strictly typed Pydantic model `ValidationResult` containing a boolean `valid` flag and a human‑readable `reason` string explaining success or failure.\n4. Use only strongly typed Pydantic models for inputs and outputs, with appropriate field validation (e.g., latitude range -90‑90, longitude range -180‑180).\n5. Raise clear validation errors for malformed inputs rather than returning ambiguous results.",
+      "acceptance_criteria": [
+        "Given a punch at (12.9716, 77.5946) with timestamp 2024‑05‑01 09:15 IST, `validate_punch` returns `{valid: true, reason: \"Punch within geofence and allowed time window.\"}`.",
+        "Given a punch 150 m away from the office coordinates, the function returns `{valid: false, reason: \"Location outside 100 m radius.\"}`.",
+        "Given a punch at 05:45 IST, the function returns `{valid: false, reason: \"Timestamp outside allowed window (06:00‑22:00).\"}`.",
+        "All inputs are validated by Pydantic; invalid types or out‑of‑range values raise `pydantic.ValidationError`.",
+        "The function executes in under 5 ms for a single validation on typical server hardware."
+      ],
+      "domain_entities": [
+        "Employee (employee_id)",
+        "PunchRecord (timestamp, latitude, longitude)",
+        "OfficeLocation (latitude, longitude, radius_meters, timezone)"
+      ],
+      "entities": [],
+      "relationships": [],
+      "task_type": "feature",
+      "constraints": [
+        "Use Python 3.11+.",
+        "All data models must inherit from `pydantic.BaseModel` with `strict` typing enabled.",
+        "Distance calculation must use the haversine formula with Earth radius = 6371000 m.",
+        "Timezone handling must rely on `zoneinfo` (or `pytz` if unavailable) to interpret the provided timestamp as office local time.",
+        "No external services (e.g., maps APIs) may be called; all logic runs locally."
+      ],
+      "non_functional_requirements": [
+        "Performance: validation must complete within 5 ms per call.",
+        "Security: function must not expose raw location data in error messages; reasons should be generic but informative.",
+        "Reliability: deterministic behavior across deployments; unit tests covering edge cases must be provided.",
+        "Logging: minimal structured log entry on each validation indicating employee_id, result, and reason.",
+        "Maintainability: code should be documented with docstrings and type hints."
+      ],
+      "risk_keywords": [
+        "money",
+        "payroll",
+        "access",
+        "deletion"
+      ],
+      "declared_permissions": [],
+      "source": "User request"
+    }
+  },
+  "approval_id": null
+}

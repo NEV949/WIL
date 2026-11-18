@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "punch-validation-suite-001",
+  "requirement_id": "REQ-PUNCH-001",
+  "created_at": "2026-11-18T12:00:00Z",
+  "tests": [
+    {
+      "test_id": "test_valid_punch",
+      "requirement_ids": [
+        "REQ-PUNCH-001"
+      ],
+      "target_module": "src.punch_validation.service",
+      "test_code": "import pytest\nfrom datetime import datetime, timezone\nfrom src.punch_validation.models import PunchEvent, ValidationResult\nfrom src.punch_validation.service import validate_punch\n\ndef test_valid_punch():\n    # Punch exactly at office location during allowed hours (12:00 local => 06:30 UTC)\n    event = PunchEvent(\n        employee_id=\"emp123\",\n        timestamp=datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc),\n        lat=12.9716,\n        lng=77.5946,\n    )\n    result: ValidationResult = validate_punch(event)\n    assert result.valid is True\n    assert result.reason is None\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "test_punch_outside_radius",
+      "requirement_ids": [
+        "REQ-PUNCH-001"
+      ],
+      "target_module": "src.punch_validation.service",
+      "test_code": "import pytest\nfrom datetime import datetime, timezone\nfrom src.punch_validation.models import PunchEvent, ValidationResult\nfrom src.punch_validation.service import validate_punch\n\ndef test_punch_outside_radius():\n    # Location ~1.1 km north of office (lat increased by ~0.01 degrees)\n    event = PunchEvent(\n        employee_id=\"emp124\",\n        timestamp=datetime(2023, 1, 1, 9, 0, tzinfo=timezone.utc),  # 14:30 local, within hours\n        lat=12.9816,\n        lng=77.5946,\n    )\n    result: ValidationResult = validate_punch(event)\n    assert result.valid is False\n    assert result.reason is not None\n    assert \"exceeds allowed\" in result.reason\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "test_punch_outside_hours",
+      "requirement_ids": [
+        "REQ-PUNCH-001"
+      ],
+      "target_module": "src.punch_validation.service",
+      "test_code": "import pytest\nfrom datetime import datetime, timezone\nfrom src.punch_validation.models import PunchEvent, ValidationResult\nfrom src.punch_validation.service import validate_punch\n\ndef test_punch_outside_hours():\n    # Punch within radius but at 23:30 local time (18:00 UTC) which is outside allowed window\n    event = PunchEvent(\n        employee_id=\"emp125\",\n        timestamp=datetime(2023, 1, 1, 18, 0, tzinfo=timezone.utc),  # 23:30 local\n        lat=12.9716,\n        lng=77.5946,\n    )\n    result: ValidationResult = validate_punch(event)\n    assert result.valid is False\n    assert result.reason is not None\n    assert \"outside allowed window\" in result.reason\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    },
+    {
+      "test_id": "test_strict_input_validation",
+      "requirement_ids": [
+        "REQ-PUNCH-001"
+      ],
+      "target_module": "src.punch_validation.models",
+      "test_code": "import pytest\nfrom datetime import datetime, timezone\nfrom pydantic import ValidationError\nfrom src.punch_validation.models import PunchEvent\n\ndef test_strict_input_validation():\n    # employee_id must be a string; passing an int should raise ValidationError due to strict mode\n    with pytest.raises(ValidationError):\n        PunchEvent(\n            employee_id=12345,\n            timestamp=datetime(2023, 1, 1, 6, 30, tzinfo=timezone.utc),\n            lat=12.9716,\n            lng=77.5946,\n        )\n",
+      "kind": "unit",
+      "deterministic": true,
+      "seed": null
+    }
+  ]
+}

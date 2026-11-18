@@ -1,0 +1,1 @@
+Coder proposal returned for microservice.py and service.py; sandbox mypy --strict passed.

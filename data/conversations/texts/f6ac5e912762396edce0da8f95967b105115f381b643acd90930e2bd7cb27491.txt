@@ -1,0 +1,42 @@
+```json
+{
+  "schema_version": "1.0",
+  "created_at": "2026-02-10T12:00:00Z",
+  "patch_id": "patch-req-punch-001-001",
+  "requirement_id": "REQ-PUNCH-001",
+  "summary": "Implement geofence and working hours validation for employee time punch with strict Pydantic v2 typing and domain models.",
+  "files": [
+    {
+      "path": "pyproject.toml",
+      "operation": "create",
+      "content": "[project]\nname = \"punch-validation\"\nversion = \"0.1.0\"\ndescription = \"Employee time-punch validation service\"\nreadme = \"README.md\"\nrequires-python = \">=3.10\"\nauthors = [\n    { name = \"Engineering\" }\n]\ndynamic = [\"dependencies\"]\ndependencies = []\n\n[project.optional-dependencies]\ndev = [\n    \"mypy==1.11.0\",\n    \"pydantic==2.9.0\",\n    \"pydantic-extra-types==2.9.0\",\n]\n\n[build-system]\nrequires = [\"setuptools>=61.0\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[tool.mypy]\nstrict = true\npython_version = \"3.10\"\nwarn_unreachable = true\nno_implicit_optional = true\nwarn_redundant_casts = true\nwarn_unused_ignores = true\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/__init__.py",
+      "operation": "create",
+      "content": "\"\"\"Punch validation module with geofence and hour checks.\"\"\"\n\nfrom punch_validation.models import OfficeLocation, PunchEvent, ValidationResult\nfrom punch_validation.service import validate_punch\n\n__all__: list[str] = [\n    \"OfficeLocation\",\n    \"PunchEvent\",\n    \"ValidationResult\",\n    \"validate_punch\",\n]\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/config.py",
+      "operation": "create",
+      "content": "\"\"\"Configuration for the default office location and operating hours.\"\"\"\n\nfrom datetime import time\n\nfrom pydantic import BaseModel, Field\n\n\nclass OfficeConfig(BaseModel):\n    \"\"\"Config-model describing the fixed office location and rules.\"\"\"\n\n    latitude: float = Field(alias=\"lat\", description=\"Office latitude in degrees\")\n    longitude: float = Field(alias=\"lng\", description=\"Office longitude in degrees\")\n    geofence_radius_m: float = Field(\n        default=100.0,\n        description=\"Radius in meters around the office where punches are accepted.\",\n    )\n    timezone: str = Field(\n        default=\"Asia/Kolkata\",\n        description=\"IANA timezone name for local office time calculations.\",\n    )\n    start: time = Field(\n        default=time(6, 0, 0),\n        description=\"First minute of the office day, inclusive.\",\n    )\n    end: time = Field(\n        default=time(22, 0, 0),\n        description=\"Last minute of the office day, inclusive.\",\n    )\n\n    class Config:\n        \"\"\"Pydantic v2 model configuration.\"\"\"\n\n        populate_by_name = True\n        strict = True\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/errors.py",
+      "operation": "create",
+      "content": "\"\"\"Custom exception hierarchy for punch validation.\"\"\"\n\n\nclass PunchValidationException(Exception):\n    \"\"\"Base exception for all punch validation failures.\"\"\"\n\n\nclass InvalidPunchInputError(PunchValidationException):\n    \"\"\"Raised when input parameters fail type or range validation.\"\"\"\n\n\nclass GeofenceViolationError(PunchValidationException):\n    \"\"\"Raised when the punch location is outside the geofence.\"\"\"\n\n    def __init__(self, distance_m: float) -> None:\n        super().__init__(f\"Punch at {distance_m:.1f} m from office exceeds 100 m geofence.\")\n\n\nclass BusinessHoursViolationError(PunchValidationException):\n    \"\"\"Raised when the punch timestamp falls outside business hours.\"\"\"\n\n    def __init__(self, local_hour: str) -> None:\n        super().__init__(f\"Punch at {local_hour} lies outside 06:00–22:00 business hours.\")\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/validators.py",
+      "operation": "create",
+      "content": "\"\"\"Input validation helpers with strict type coercion.\"\"\"\n\nfrom datetime import datetime\nfrom typing import Any, cast\n\nfrom pydantic import ValidationError\n\nfrom punch_validation.errors import InvalidPunchInputError\nfrom punch_validation.models import PunchEvent\n\n\ndef coerce_punch_event(\n    employee_id: Any,\n    timestamp: Any,\n    lat: Any,\n    lng: Any,\n) -> PunchEvent:\n    \"\"\"Coerce and validate raw inputs into a fully typed ``PunchEvent``.\n\n    This single choke-point lets the outer ``validate_punch`` accept\n    loosely-typed positional arguments (e.g. from JSON transport) and\n    internally work with guaranteed Pydantic models.\n\n    Args:\n        employee_id: Worker identifier — must be non-empty string.\n        timestamp: Calendar instant — must be a ``datetime`` or ISO-8601 string.\n        lat: Latitude in WGS-84 degrees.\n        lng: Longitude in WGS-84 degrees.\n\n    Returns:\n        A fully-typed and field-validated ``PunchEvent`` instance.\n\n    Raises:\n        InvalidPunchInputError: When any field fails Pydantic validation.\n    \"\"\"\n    try:\n        employee_id_str: str = str(employee_id) if isinstance(employee_id, str) else str(employee_id)\n        ts_value: Any = (\n            datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp\n        )\n        lat_val: float = float(lat)\n        lng_val: float = float(lng)\n\n        event = PunchEvent(\n            employee_id=employee_id_str,\n            timestamp=ts_value,  # type: ignore[arg-type]\n            lat=lat_val,\n            lng=lng_val,\n        )\n        cast(PunchEvent, event)\n        return event\n    except (ValidationError, TypeError, ValueError) as exc:\n        raise InvalidPunchInputError(f\"Invalid punch input: {exc}\") from exc\n",
+      "sha256": null
+    },
+    {
+      "path": "src/punch_validation/geo.py",
+      "operation": "create",
+      "content": "\"\"\"Haversine distance calculations for WGS-84 coordinates.\"\"\"\n\nimport math\n\n\ndef haversine_distance(\n    lat1: float,\n    lng1: float,\n    lat2: float,\n    lng2: float,\n) -> float:\n    \"\"\"Return great-circle distance in meters between two WGS-84 points.\n\n    Uses the Haversine formula which accounts for Earth's curvature.\n\n    Formula reference:\n        a = sin²(Δφ/2) + cos φ₁ · cos φ₂ · sin²(Δλ/2)\n        c = 2 · atan2(√a, √(1−a))\n        d = R · c   where R = 6371000 m (mean Earth radius)\n\n    Args:\n        lat1: Latitude of the first point in degrees.\n        lng1: Longitude of the first point in degrees.\n        lat2: Latitude of the second point in degrees.\n        lng2: Longitude of the second point in degrees.\n\n    Returns:\n        Distance in meters (float >= 0).\n    \"\"\"\n    r: float = 6371000.0\n    phi1: float = math.radians(lat1)\n    phi2: float = math.radians(lat2)\n    dphi: float = math.radians(lat2 - lat1)\n    dlambda: float = math.radians(lng2 - lng1)\n\n    a: float = (\n        math.sin(dphi / 2.0) ** 2\n        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2\n    )\n    c: float = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))\n    return
